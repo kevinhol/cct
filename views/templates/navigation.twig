@@ -1,0 +1,34 @@
+<nav class="navbar navbar-fixed-top bg-primary">
+    <div class="container-fluid">
+        <div class="collapse navbar-collapse bg-primary" id="bs-example-navbar-collapse-1">
+            <div>
+                <a class="navbar-brand bg-primary" href="#">{{ siteConfigs['organization'] }}</a>
+            </div>
+            {% if session.user.name and session.user.email and session.user.customerid %}
+                <div id="app-options">
+                    <ul class="nav navbar-nav nav-justified">
+                        <li class="active"><a class="bg-primary" href="{{ siteConfigs['website_url'] }}/Home">Home</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_url'] }}/People">People</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_url'] }}/Communities">Communities</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_url'] }}/Files">Files</a></li>
+                    </ul>
+                </div>
+
+
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="navbar-brand">
+                        Welcome {{ session.user.name }}
+                    </li>
+                    <li>
+                        <button class="btn btn-default navbar-btn"> 
+                            <a href="{{ siteConfigs['website_url'] }}/logout">
+                                Log out
+                            </a>
+                        </button>
+                    </li>
+                </ul>
+            {% endif %}
+        </div>
+    </div><!-- /.navbar-collapse -->
+</nav>
+
