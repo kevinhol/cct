@@ -48,6 +48,24 @@ function sanitize_output($buffer) {
     return $buffer;
 }
 
+function processOauthLogin($siteConfigs, $loginPostArray){
+    
+    if (!in_array($loginPostArray['environment'], $siteConfigs['cloudEnvs'])) {
+        error_log("User passed invalid environment parameter on login attempt", 1, $siteConfigs['admin_email']);
+        return false;
+    }
+
+    if(! ( isset($loginPostArray['app-id']) && strlen($loginPostArray['app-id']) == 26  && preg_match('/app_[0-9]{8}_[0-9]{13}/', $loginPostArray['app-id']) ) ){
+        error_log("User passed invalid App ID", 1, $siteConfigs['admin_email']);
+        return false;
+    }
+    
+    $_SESSION['client_id']   = $loginPostArray['app-id'];
+    $_SESSION['environment'] = $loginPostArray['environment'];
+    return true;
+}
+
+
 function processLogin($siteConfigs, $loginPostArray) {
 
 
@@ -179,7 +197,7 @@ function setUserSessionVars($siteconfigs, $user) {
 function logout($siteConfigs) {
 
     session_destroy();
-    header('Location: ' . $siteConfigs['website_url'] . '/');
+    header('Location: ' . $siteConfigs['website_www'] . '/');
     exit();
 }
 

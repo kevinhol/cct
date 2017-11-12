@@ -10,7 +10,7 @@
 
         <div class="container">
             <div class="row">
-                <div class="col-md-6 col-md-offset-3">
+                <div class="col-md-8 col-md-offset-2">
                     <div class="panel panel-login">
                         <div class="panel-heading">
                             <div class="row">
@@ -23,28 +23,58 @@
                         <div class="panel-body">
                             <div class="row">
                                 <div class="col-lg-12">
-                                    <form id="login-form" action="{{ siteConfigs['website_url'] }}/login" method="post" role="form" style="display: block;">
+                                    <form id="login-form" action="{{ siteConfigs['website_www'] }}/login" method="post" role="form">
                                         <div class="form-group">
-                                            <select name="environment" class="form-control" >
-                                                {% for env in siteConfigs.cloudEnvs %}
-                                                    <option>{{ env }}</option>  
-                                                {% endfor %}
-                                            </select>
+	                                        <div class="input-group">
+                                                <span class="input-group-addon"><i class="glyphicon glyphicon-globe"></i></span>
+	                                            <select name="environment" class="form-control" >
+	                                                {% for env in siteConfigs.cloudEnvs %}
+	                                                    <option class="form-control">{{ env }}</option>  
+	                                                {% endfor %}
+	                                            </select>
+                                            </div>
                                         </div>
                                         <div class="form-group">
                                             <div class="row">
+                                            	<!--
                                                 <div class="col-lg-5">
-                                                    <input type="text" name="email" id="email" tabindex="2" class="form-control" placeholder="Email" value="" />
+	                                                <div class="input-group">
+	                                                <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+	                                                    <input type="text" name="email" id="email" tabindex="2" class="form-control" placeholder="Email" value="" data-validation="email required" />
+	                                                </div>
                                                 </div>
+                                                
                                                 <div class="col-lg-4">
-                                                    <input type="password" name="password" id="password" tabindex="3" class="form-control" placeholder="Password" value="" />
+	                                                <div class="input-group">
+		                                                <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
+	                                                    <input type="password" name="password" id="password" tabindex="3" class="form-control" placeholder="Password" value=""  data-validation="length required" data-validation-length="min8" />
+	                                                </div>
                                                 </div>
                                                 <div class="col-lg-3 float-right">
-                                                    <input type="submit" name="login-submit" id="login-submit" tabindex="4" class="form-control btn btn-login" value="Log In">
+	                                                <button type="button submit" class="btn btn-primary login-btn form-control ">Sign in</button>
+                                                </div>
+                                                -->
+	                                            <div class="col-lg-8">
+	                                                <div class="input-group">
+	                                                <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
+	                                                    <input type="text" name="app-id" id="app-id" tabindex="2" class="form-control" placeholder="Enter App id" value="" data-validation="length required" data-validation-length="26" />
+	                                                </div>
+                                                </div>    
+                                                <div class="col-lg-4 float-right">
+	                                                <div class="input-group">
+	                                                	<button type="button submit" class="btn btn-primary login-btn form-control glyphicon-glyphicon-log-in">Submit</button>
+	                                                	<span class="input-group-addon"><i class="glyphicon glyphicon-log-in"></i></span>
+		                                                
+	                                                </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </form>
+                                    <script>
+									  $.validate({
+									    modules : 'security'
+									  });
+									</script>
                                 </div>
                             </div>
                         </div>
@@ -52,6 +82,7 @@
                 </div>
             </div>
         </div>
+        
     </div>
 
 {% endblock %}

@@ -124,3 +124,13 @@ body {
 .navbar-nav.nav-justified > li{
     float:none;
 }
+
+
+.panel-login input[type="text"], .panel-login input[type="email"], .panel-login input[type="password"],  .panel-login select, .panel-login option , .login-btn{
+	height: 45px;
+}
+
+.bv-form .bv-icon-input-group{
+	right: 15px;
+	top: 4px;
+}
