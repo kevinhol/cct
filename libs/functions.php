@@ -1,11 +1,12 @@
 <?php
 
+
 function getSiteConfigs() {
     $site_configs = array();
     try {
         $site_configs = parse_ini_file("./configs/main.ini");
     } catch (Exception $e) {
-        echo "Error reading config file";
+        echo "<p>Sorry the application is unavailable at this time.</br>Error reading config file.</p>";
         die();
     }
     return $site_configs;
@@ -48,20 +49,21 @@ function sanitize_output($buffer) {
     return $buffer;
 }
 
-function processOauthLogin($siteConfigs, $loginPostArray){
-    
-    if (!in_array($loginPostArray['environment'], $siteConfigs['cloudEnvs'])) {
-        error_log("User passed invalid environment parameter on login attempt", 1, $siteConfigs['admin_email']);
-        return false;
-    }
+function verifyAppID($siteConfigs, $loginPostArray){
 
     if(! ( isset($loginPostArray['app-id']) && strlen($loginPostArray['app-id']) == 26  && preg_match('/app_[0-9]{8}_[0-9]{13}/', $loginPostArray['app-id']) ) ){
         error_log("User passed invalid App ID", 1, $siteConfigs['admin_email']);
         return false;
     }
+    return true;
+}
+
+function verifyEnvSelection($siteConfigs, $loginPostArray){
     
-    $_SESSION['client_id']   = $loginPostArray['app-id'];
-    $_SESSION['environment'] = $loginPostArray['environment'];
+    if (!in_array($loginPostArray['environment'], $siteConfigs['cloudEnvs'])) {
+        error_log("User passed invalid environment parameter on login attempt", 1, $siteConfigs['admin_email']);
+        return false;
+    }
     return true;
 }
 
@@ -194,11 +196,141 @@ function setUserSessionVars($siteconfigs, $user) {
     }
 }
 
-function logout($siteConfigs) {
+function logout($siteConfigs, $message, $error = false) {
 
     session_destroy();
-    header('Location: ' . $siteConfigs['website_www'] . '/');
+    
+    $msg = '';
+
+    if(strlen($message)){
+      $msg .= "?msg=" . $message;
+    }
+    if($error == true){
+        $msg .= "&error=true";
+    }
+    
+    header('Location: ' . $siteConfigs['website_www'] . '/' . $msg);
     exit();
 }
 
+
+function getAccessTokenHeader($siteConfigs){
+    
+    if(! isset($_SESSION['OAuthApiTokens']) ){
+        // we should log an error here
+        echo "<p>OAuthApiTokens not set in getAccessTokenHeader";
+        return false;
+    }
+    
+    $tokensArray = $_SESSION['OAuthApiTokens'];
+    $nowtime     = round(microtime(true) * 1000);  // time in milliseconds because $tokensArray['issued_on'] is in milliseconds
+    
+    if( $nowtime > ( $tokensArray['issued_on'] + $tokensArray['expires_in'] )  ){
+        // request new access token
+        renewAccessTokens($siteConfigs);
+    }
+    $authHeader = "Authorization:" . $tokensArray['token_type'] . " " . $tokensArray["access_token"];
+    
+    return $authHeader;
+}
+
+function renewAccessTokens($siteConfigs){
+    
+    if(! isset($_SESSION['OAuthApiTokens']) ){
+        // we should log an error here 
+        echo "<p>OAuthApiTokens not set in renewAccessTokens";
+        return false;
+    }
+    
+    try{
+        // build callback url for server-to-server handshake to gather access tokens
+        $Oauth_NewAccessTokens_url = $_SESSION['environment'] . $siteConfigs['oAuthRequestNewTokenSlug'] . $_SESSION['OAuthApiTokens']["refresh_token"] . "&client_id=" . $_SESSION['client_id'] . "&client_secret=" . $_SESSION["client_secret"] ;
+        echo "</hr> </br> Oauth_NewAccessTokens_url: " . $Oauth_NewAccessTokens_url;
+        
+        $getTokensRequest = \Httpful\Request::get($Oauth_NewAccessTokens_url)->send();
+        
+        parse_str($getTokensRequest, $tokensResponse);
+        
+        // We don't document min length as IBM can change that based on any cryptographic algorithm choice. So we only test for token not exceeding the max.
+        // https://www-10.lotus.com/ldd/appdevwiki.nsf/xpAPIViewer.xsp?lookupName=API+Reference#action=openDocument&res_title=Step_3_Exchange_authorization_code_for_access_and_refresh_tokens_sbt&content=apicontent
+        if(
+            isset($tokensResponse["access_token"]) &&
+            isset($tokensResponse["refresh_token"]) &&
+            isset($tokensResponse["issued_on"]) &&
+            isset($tokensResponse["expires_in"]) &&
+            isset($tokensResponse["token_type"]) &&
+            strlen($tokensResponse["access_token"]) <= 256 &&
+            strlen($tokensResponse["refresh_token"]) <= 256
+            ){
+                $_SESSION['OAuthApiTokens']      = $tokensResponse; // overwrite the previous session array
+                $_SESSION['access_token_header'] = getAccessTokenHeader($siteConfigs);
+
+                return true;
+        }else{
+            // log error and handle function response
+            echo "<p>we ended up here ? </p>"; 
+            var_dump($tokensResponse);
+            echo "</hr>";
+            exit;
+            return false;
+        }
+    }catch(Exception $e){
+        $function_response['error'] = "Exception error getting content from curl request in renewAccessTokens()";
+        var_dump($e);
+        exit;
+        return false;
+    }
+}
+
+function setApiTokens($siteConfigs, $postArr){
+    
+    $function_response;
+    
+    if(isset($postArr['client_secret']) && ctype_alnum($postArr['client_secret'])&& strlen($postArr['client_secret']) <= 256){
+        
+        $_SESSION["client_secret"] = $postArr['client_secret'];
+        
+        try{
+            // build callback url for server-to-server handshake dance to gather access tokens
+            $Oauth_url = $_SESSION['environment'] . $siteConfigs['oAuthTokenSlug'] . "&callback_uri=" . $siteConfigs['website_www'] . $siteConfigs['callBackSlug'] . "&client_id=" . $_SESSION['client_id'] . "&client_secret=" . $_SESSION["client_secret"] . "&code=" . $_SESSION['oauth_authorization_code'] ;
+            
+            $getTokensRequest = \Httpful\Request::get($Oauth_url)->send();
+            
+            parse_str($getTokensRequest, $tokensResponse);
+
+            if(
+                isset($tokensResponse["access_token"]) &&
+                isset($tokensResponse["refresh_token"]) &&
+                isset($tokensResponse["issued_on"]) &&
+                isset($tokensResponse["expires_in"]) &&
+                isset($tokensResponse["token_type"]) &&
+                strlen($tokensResponse["access_token"]) <= 256 &&
+                strlen($tokensResponse["refresh_token"]) <= 256
+                ){
+                    // request has returned valid tokens
+                    $_SESSION['OAuthApiTokens']      = $tokensResponse;
+                    $_SESSION['access_token_header'] = getAccessTokenHeader($siteConfigs);
+                    
+                    // unset this now as not used anymore
+                    unset($_SESSION['oauth_authorization_code']);
+                    
+                    $function_response['success'] = true;
+                    
+            }else{
+                $function_response['error'] = "Error with tokens content from curl request";
+                var_dump($function_response['error'], $tokensResponse);
+                exit;
+            }
+            
+        }catch(Exception $e){
+            $function_response['error'] = "Exception error getting content from curl request";
+            var_dump($function_response['error'], $e);
+            exit;
+        }
+    }
+    else{
+        $function_response['error'] = "Invalid or empty Oauth client secret provided";
+    }
+    return $function_response;
+}
 ?>

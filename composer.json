@@ -1,9 +1,10 @@
 {
-	"name" : "vendor/c-a2",
+	"name" : "vendor/cct",
 	"description" : "Description of project CCT.",
 	"authors" : [{
 			"name" : "KevinIBM",
-			"email" : "your@email.here"
+			"email" : "kevinhol@ie.ibm.com",
+			"role" : "Author"
 		}
 	],
 	"require" : {
