@@ -134,3 +134,24 @@ body {
 	right: 15px;
 	top: 4px;
 }
+
+#dismissAlert{
+/* 	width: 50%; */
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#dismissAlertBody .glyphicon {
+	margin-right: 12px;
+}
+
+/* #submit-button{ */
+/* 	width: 100%; */
+/* 	font-size: 1.2em; */
+/* } */
+/* form .input-group{ */
+/* 	width: 100%; */
+/* } */
+/* form .input-group .glyphicon-log-in{ */
+	
+/* } */

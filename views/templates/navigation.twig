@@ -2,15 +2,15 @@
     <div class="container-fluid">
         <div class="collapse navbar-collapse bg-primary" id="bs-example-navbar-collapse-1">
             <div>
-                <a class="navbar-brand bg-primary" href="#">{{ siteConfigs['organization'] }}</a>
+                <div class="navbar-brand bg-primary">{{ siteConfigs['organization'] }}</div>
             </div>
             {% if session.user.name and session.user.email and session.user.customerid %}
                 <div id="app-options">
                     <ul class="nav navbar-nav nav-justified">
-                        <li class="active"><a class="bg-primary" href="{{ siteConfigs['website_url'] }}/Home">Home</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_url'] }}/People">People</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_url'] }}/Communities">Communities</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_url'] }}/Files">Files</a></li>
+                        <li class="active"><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Home">Home</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/People">People</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Communities">Communities</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Files">Files</a></li>
                     </ul>
                 </div>
 
@@ -21,7 +21,7 @@
                     </li>
                     <li>
                         <button class="btn btn-default navbar-btn"> 
-                            <a href="{{ siteConfigs['website_url'] }}/logout">
+                            <a href="{{ siteConfigs['website_www'] }}/logout">
                                 Log out
                             </a>
                         </button>

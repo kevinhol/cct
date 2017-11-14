@@ -15,7 +15,7 @@
                         <div class="panel-heading">
                             <div class="row">
                                 <div class="col-xs-12">
-                                	<h4>Welcome, please provide your App Key to login</h4>
+                                    <h4>Please provide your App/Client credentials</h4>
                                 </div>
                             </div>
                             <hr>
@@ -23,29 +23,20 @@
                         <div class="panel-body">
                             <div class="row">
                                 <div class="col-lg-12">
-                                    <form id="login-form" action="{{ siteConfigs['website_www'] }}/login" method="post" role="form" class="toggle-disabled">
-                                        <div class="form-group">
-	                                        <div class="input-group">
-                                                <span class="input-group-addon"><i class="glyphicon glyphicon-globe"></i></span>
-	                                            <select name="environment" class="form-control" tabindex='1'>
-	                                                {% for env in siteConfigs.cloudEnvs %}
-	                                                    <option class="form-control">{{ env }}</option>  
-	                                                {% endfor %}
-	                                            </select>
-                                            </div>
-                                        </div>
+                                    <form id="login-form" action="{{ siteConfigs['website_www'] }}/getApiTokens" method="post" role="form" class="toggle-disabled">
                                         <div class="form-group">
                                             <div class="row">
 	                                            <div class="col-lg-8">
 	                                                <div class="input-group">
 	                                                <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
-	                                                    <input type="text" name="app-id" id="app-id" tabindex="2" class="form-control" placeholder="Enter AppID / ClientID" value="" data-sanitize="trim insertLeft" data-sanitize-insert-left="app_" data-validation="required exactly26chars appIdRegex " />
+	                                                    <input type="text" name="client_secret" id="client_secret" tabindex="2" class="form-control" placeholder="Enter App Client Secret" value="" data-sanitize="trim" data-validation="required max256Chars appSecRegex" />
 	                                                </div>
                                                 </div>    
                                                 <div class="col-lg-4 float-right">
-	                                                <div class="input-group" >
-	                                                	<button type="button submit" tabindex="2"  class="btn btn-primary login-btn form-control">Submit</button>
+	                                                <div class="input-group">
+	                                                	<button type="button submit" class="btn btn-primary login-btn form-control glyphicon-glyphicon-log-in">Submit</button>
 	                                                	<span class="input-group-addon"><i class="glyphicon glyphicon-log-in"></i></span>
+		                                                
 	                                                </div>
                                                 </div>
                                             </div>
@@ -56,11 +47,11 @@
 									    modules : 'security, sanitize toggleDisabled', 
 									    disabledFormFilter : 'form.toggle-disabled'
 									  });
-									</script>
+									</script
                                 </div>
                             </div>
-                            {% include 'dismissAlert.twig' %}
                         </div>
+						{% include 'dismissAlert.twig' %}
                     </div>
                 </div>
             </div>

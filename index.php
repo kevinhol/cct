@@ -22,8 +22,9 @@ if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], "gzip")) {
 }
 
 // sanitize all post array
+// this will also strip Extended ASCII Codes eg é ú ü
 foreach ($_POST as $key => $value) {
-    $key[$value] = trim($value);
+    $key[$value] = filter_var(trim($value) , FILTER_FLAG_STRIP_LOW , FILTER_FLAG_STRIP_HIGH);
 }
 filter_var_array($_POST, FILTER_SANITIZE_STRING);
 
@@ -64,7 +65,7 @@ $app->get($siteConfigs['callBackSlug'], function () use ($siteConfigs) {
         $view = ViewFactory::createTwigView("AccessTokens");
         $view->display($viewData);
     } else {
-        logout($siteConfigs, "Invalid or empty Oauth authorization code provided", true);
+        logout($siteConfigs, "Invalid or empty Oauth authorization code provided", $siteConfigs['boostrapAlertTypes'][3]);
     }
 });
 
@@ -72,23 +73,45 @@ $app->post('/getApiTokens', function () use ($siteConfigs) {
     
     // first ensure there is a session set
     if (! isset($_SESSION['client_id'], $_SESSION['oauth_authorization_code'], $_SESSION['environment'])) {
-        $error_message = "/getApiTokens failed on session check";
-        logout($siteConfigs, $error_message, true);
+        logout($siteConfigs, "Session check failed before getting Api Tokens", $siteConfigs['boostrapAlertTypes'][3]);
     }
     
     $setApiTokensResponse = setApiTokens($siteConfigs, $_POST);
     
-    if (isset($setApiTokensResponse['error'])) {
-        logout($siteConfigs, $api_tokens['error'], true);
+    if (isset($setApiTokensResponse['error']) && isset($setApiTokensResponse['go_back']) && $setApiTokensResponse['go_back'] == true) {
+           
+            // we the referrer before redirection back to the location. 
+            $referrerUrl = parse_url($_SERVER['HTTP_REFERER']);
+            $designedReferrer = $siteConfigs['website_www'] . $siteConfigs['callBackSlug'];
+            $actualReferrer = $referrerUrl['scheme'] . "://" . $referrerUrl['host'] . $referrerUrl['path'];
+            
+            if($designedReferrer != $actualReferrer){
+                logout($siteConfigs, "Error detected with server referrer during token request", $siteConfigs['boostrapAlertTypes'][3]);
+            }
+            
+            $appendToUrl = getMsgToAppendToUrl($siteConfigs, $setApiTokensResponse['error'], $siteConfigs['boostrapAlertTypes'][3], 1);
+            
+            header('Location: ' . $_SERVER['HTTP_REFERER'] . $appendToUrl);
+            exit;
     } else if (isset($setApiTokensResponse['success'])) {
         // at this point we sbould be user authenicated and validated and have tokens to access api
         // show the homepage
-        echo "</hr><p>  at this point we sbould be user authenicated and validated and have tokens to access api </br> show the homepage </p>";
-        // set up auth user and call getUserIdentity etc from functions line 126 onwards
-        exit();
+        
+        $userCreated = createUser($siteConfigs);
+
+        if($userCreated){
+            header('Location: '.  $siteConfigs['website_www'] . '/Home');
+            exit();
+        }
+        else{
+            logout($siteConfigs, "Sorry we failed to retrieve your user account data.", $siteConfigs['boostrapAlertTypes'][3]); // failed to create the user             
+        }
+
     } else {
         // something weird has gone on.. time to debug
-        // var_dump($setApiTokensResponse);
+        var_dump($setApiTokensResponse); 
+        exit;
+        logout($siteConfigs, $setApiTokensResponse['error'], $siteConfigs['boostrapAlertTypes'][3]);
     }
 });
 
@@ -100,19 +123,21 @@ $app->post('/login', function () use ($siteConfigs) {
         $_SESSION['client_id']   = $_POST['app-id'];
         
         // buildcall backurl
-        $Oauth_url = $_POST['environment'] . $siteConfigs['oAuthAuthorizationSlug'] . $siteConfigs['website_www'] . $siteConfigs['callBackSlug'] . "&client_id=";
+        $Oauth_url = $_POST['environment'] . $siteConfigs['oAuthAuthorizationSlug'] . $siteConfigs['website_www'] . $siteConfigs['callBackSlug'] . "&client_id=" . $_SESSION['client_id'];
         
-        header('Location: ' . $Oauth_url . $_SESSION['client_id']);
+        // should check the cloud server response to a bad app-id value .. eg "oauth_invalid_clientid" if the user is already logged in
+        
+        header('Location: ' . $Oauth_url);
         exit();
     } else {
-        logout($siteConfigs, "Oauth authorization failed", true);
+        logout($siteConfigs, "Environment or App Id verification failed.", $siteConfigs['boostrapAlertTypes'][3]);
     }
 });
 
 $app->get('/Home', function () use ($siteConfigs) {
     
     if (! isset($_SESSION["user"])) {
-        logout($siteConfigs, "You are not logged in yet", true);
+        logout($siteConfigs, "You are not logged in yet", $siteConfigs['boostrapAlertTypes'][2]);
     }
     
     $viewData = array(
@@ -129,7 +154,7 @@ $app->get('/People', function () use ($siteConfigs) {
         logout($siteConfigs, "You are not logged in yet", true);
     }
     
-    $subscribers = getSubscriberList($siteConfigs, $_SESSION['user']);
+    $subscribers = getSubscriberList($siteConfigs);
     $persons[] = array();
     
     if (count($subscribers['List'])) {
@@ -150,7 +175,7 @@ $app->get('/People', function () use ($siteConfigs) {
 $app->get('/Communities', function () use ($siteConfigs) {
     
     if (! isset($_SESSION["user"])) {
-        logout($siteConfigs, "You are not logged in yet", true);
+        logout($siteConfigs, "You are not logged in yet", $siteConfigs['boostrapAlertTypes'][2]);
     }
     
     $viewData = array(
@@ -164,7 +189,7 @@ $app->get('/Communities', function () use ($siteConfigs) {
 $app->get('/Files', function () use ($siteConfigs) {
     
     if (! isset($_SESSION["user"])) {
-        logout($siteConfigs, "You are not logged in yet", true);
+        logout($siteConfigs, "You are not logged in yet", $siteConfigs['boostrapAlertTypes'][2]);
     }
     
     $viewData = array(
@@ -176,7 +201,7 @@ $app->get('/Files', function () use ($siteConfigs) {
 });
 
 $app->get('/logout', function () use ($siteConfigs) {
-    logout($siteConfigs);
+    logout($siteConfigs, "You have successfully logged out", $siteConfigs['boostrapAlertTypes'][0]);
 });
 
 $app->notFound(function () use ($siteConfigs) {
