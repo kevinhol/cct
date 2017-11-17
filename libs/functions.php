@@ -206,7 +206,9 @@ function getUserIdentity($siteConfigs)
     if (! isset($_SESSION['environment'])) {
         return null;
     }
-    $response = \Httpful\Request::get($_SESSION['environment'] . $siteConfigs['userIdentitySlug'])->addHeader('Authorization', $_SESSION['access_token_header'])->send();
+    $url = $_SESSION['environment'] . $siteConfigs['userIdentitySlug'];
+    
+    $response = \Httpful\Request::get($url)->addHeader('Authorization', $_SESSION['access_token_header'])->send();
     
     return json_decode($response, true);
 }
@@ -237,7 +239,6 @@ function getUserRoles($siteConfigs, $userEmail)
  */
 function getSubscriberList($siteConfigs, $_pageNumber = 1, $_pageSize = 15)
 {
-    
     $url = $_SESSION['environment'] . $siteConfigs['subscriberResourceSlug'] . "?_pageNumber=" . $_pageNumber . "&_pageSize=" . $_pageSize;
     
     $response = \Httpful\Request::get($url)->addHeader('Authorization', $_SESSION['access_token_header'])->send();
@@ -410,46 +411,83 @@ function setApiTokens($siteConfigs, $postArr)
     return $function_response;
 }
 
-
 /**
- * 
+ *
  * @param Array $siteConfigs
- * @param int $id The user id
- * @param boolean $suspend This dictates to suspend or unsuspend the user  
+ * @param int $id
+ *            The user id
+ * @param boolean $suspend
+ *            This dictates to suspend or unsuspend the user
  * @return boolean|\Httpful\Response
  */
 function suspendUser($siteConfigs, $id, $suspend = true)
 {
-    
     if (! (isset($_SESSION['environment'], $_SESSION['user']) && ctype_digit($id) && $id > 0)) {
         return false;
     }
     
-    $xop = ($suspend) ? 'suspendSubscriber' :'unSuspendSubscriber' ;
-   
-    $url = $_SESSION['environment'] . $siteConfigs['subscriberResourceSlug'] . '/' . $id ;
-    $response = \Httpful\Request::post($url )->addHeaders(array(
-        'Authorization' => $_SESSION['access_token_header'],
-        'x-operation' => $xop
-    ))->send();
+    $xop = ($suspend) ? 'suspendSubscriber' : 'unSuspendSubscriber';
     
-    return $response;
+    $url = $_SESSION['environment'] . $siteConfigs['subscriberResourceSlug'] . '/' . $id;
 
+    $ret = [];
+    
+    // Set up CUrL
+    $headers[] = 'Authorization: ' . $_SESSION['access_token_header'] ; 
+    $headers[] = 'x-operation:' . $xop ;
+    
+    $fields = [
+        "id" => $id ,
+    ];
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_HEADER, 1); // return the response headers
+
+    $response = curl_exec($ch);
+    
+    if ($response === false) {
+        $return = ('Curl error: ' . curl_error($ch));
+        curl_close($ch);
+        return $return;
+    }
+    curl_close($ch);
+    
+    list($headers, $resp) = explode("\r\n\r\n", $response, 2);
+
+    // https://www-10.lotus.com/ldd/appdevwiki.nsf/xpAPIViewer.xsp?lookupName=API+Reference#action=openDocument&res_title=HTTP_status_codes_bss&content=apicontent
+    // search for a HTTP/1.1 20X response header 
+    $success = preg_grep($siteConfigs['http20Xheader'], explode("\n", $headers));
+
+    // Finish CUrL
+    $ret['success'] = count($success) ? true:false;  
+    
+//     $httpful = \Httpful\Request::post($url)->addHeaders(array(
+//         'Authorization' => $_SESSION['access_token_header'],
+//         'x-operation' => $xop
+//     ))->send();
+    
+//     $ret['httpful'] = json_decode($httpful);
+    
+    return $ret;
+//    return json_decode($response, true);
 }
 
-function searchUser($siteConfigs, $searhString, $searchOnlyNameAndEmail = true){
-    if (! (isset($_SESSION['environment'], $_SESSION['user']) && ctype_alnum($searhString) )) {
+function searchUser($siteConfigs, $searhString, $searchOnlyNameAndEmail = true)
+{
+    if (! (isset($_SESSION['environment'], $_SESSION['user']) && ctype_alnum($searhString))) {
         return false;
     }
     
-    $nameEmail = $searchOnlyNameAndEmail ? "true" : "false"; 
+    $nameEmail = $searchOnlyNameAndEmail ? "true" : "false";
     
-    $url = $_SESSION['environment'] . $siteConfigs['searchPeopleSlug'] . "?searchOnlyNameAndEmail=" . $nameEmail . "&query=" . $searhString ;
+    $url = $_SESSION['environment'] . $siteConfigs['searchPeopleSlug'] . "?searchOnlyNameAndEmail=" . $nameEmail . "&query=" . $searhString;
     
-    $response = \Httpful\Request::get($url )->addHeaders(array(
-        'Authorization' => $_SESSION['access_token_header'],
-    ))->send();
+    $response = \Httpful\Request::get($url)->addHeader('Authorization', $_SESSION['access_token_header'])->send();
     
-    return  array("url" => $url, 'token' =>  $_SESSION['access_token_header'], 'functionResponseIs' => $response);
+    return json_decode($response, true);
 }
 ?>

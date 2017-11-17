@@ -241,6 +241,11 @@ body {
 	box-shadow: inset -1px 0px 0px 1px rgba(0,0,0,0.07);
 }
 
+#peopleSearchDiv{
+	padding: 0;
+	width: 50%;
+    float: right;
+}
 #peopleSearchDiv input{
 	border:none;
 	-webkit-box-shadow: inset 1px 0px 0px 1px rgba(0,0,0,0.07);
@@ -252,4 +257,24 @@ body {
 	outline-width: 0;
 	outline: none;
 	outline-style: none;
+}
+
+#search-popover-content{
+	width: 40%;
+	margin-top: 38px;
+	position: absolute;
+	width: 100%;
+	left: 0;
+	z-index: 1000;
+	display: none;
+}
+
+#peopleSearchIG{
+	width: 40%;
+	float: right;
+}
+
+#search-popover-content .close{
+	top: -10px;
+	position: relative;
 }

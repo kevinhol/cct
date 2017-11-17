@@ -213,10 +213,22 @@ function suspendUser(id, name){
 					actionLink.html("Unsuspend");
 					actionLink.attr("action", "unsuspendUser:"+ id);
 					
+					setTimeout(function(){ 
+						$('#basicModal').toggle();
+					}, 3000);
+					
+				}else if(result.success == false){
+					var msg = (typeof result.message !== 'undefined' && result.message.length > 0 )? result.message : "An unknown error occurred";
+					
+					$('#basicModal .modal-body').eq(0).html(buildAlert("alert-warning", msg));
+					$('#basicModal .modal-footer').eq(0).remove();
 				}
 				console.log(result);
 				
-			}
+			},
+			error: function (xhr, tst, err) {
+                console.log(err);
+            }   
 		});
 
 		// Set another completion function for the request above
@@ -261,10 +273,22 @@ function unsuspendUser(id, name){
 					actionLink.html("Suspend");
 					actionLink.attr("action", "suspendUser:"+ id);
 					
+					setTimeout(function(){ 
+						$('#basicModal').toggle();
+					}, 3000);
+					
+				}else if(result.success == false){
+					var msg = (typeof result.message !== 'undefined' && result.message.length > 0 )? result.message : "An unknown error occurred";
+					
+					$('#basicModal .modal-body').eq(0).html(buildAlert("alert-warning", msg));
+					$('#basicModal .modal-footer').eq(0).remove();
 				}
 				console.log(result);
 				
-			}
+			},
+			error: function (xhr, tst, err) {
+                console.log(err);
+            }
 		});
 
 		// Set another completion function for the request above
@@ -330,6 +354,7 @@ function setupPeopleSearch(){
 		
 		if(txt.length >= 3){
 			spinnerSpan.addClass("loader");
+			$('#search-popover-content').fadeIn();
 			
 			//do ajax call 
 			var jqxhr = $.ajax({
@@ -340,10 +365,8 @@ function setupPeopleSearch(){
 				success: function(resultData) {
 
 					var result = $.parseJSON(resultData);
-					console.log("user data");
 					console.log(result);
 					
-					return;
 					if(result.success == false && result.action == 'logout'){
 						buildAlert("alert-warning", "This action has failed. You will be redirected to login in to the service");
 
@@ -354,20 +377,12 @@ function setupPeopleSearch(){
 					}
 					
 					if(result.success == true){
-//						$('#basicModal .modal-body').eq(0).html(buildAlert("alert-success", "User "+ name +" has been successfully unsuspended"));
-//						$('#basicModal .modal-footer').eq(0).remove();
-//
-//						// update the table cell with the user state 
-//						$("#subscriberListTable tr[subscriberid='"+ id +"']").eq(0).find('td').eq(4).html("Active");
-//						
-//						//update the user options
-//						var actionLink = $("#subscriberListTable a[action='unsuspendUser:"+ id +"']");
-//						actionLink.html("Suspend");
-//						actionLink.attr("action", "suspendUser:"+ id);
-						
 					}
 					console.log(result);
-				}
+				},
+				error: function (xhr, tst, err) {
+	                console.log(err);
+	            }
 			});
 
 		}else{
@@ -381,5 +396,11 @@ function setupPeopleSearch(){
 			search.attr("placeholder", defaultTxt);
 			spinnerSpan.removeClass("loader");
 		}
+	});
+
+	var closeBtn = $('#search-popover-content .close').eq(0);
+	
+	closeBtn.click(function(){
+		$('#search-popover-content').fadeOut();
 	});
 }

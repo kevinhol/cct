@@ -35,6 +35,15 @@ session_start();
 // Instantiate Slim
 $app = new \Slim\Slim();
 
+//start output of secure headers 
+header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
+header('X-Content-Type-Options: nosniff');
+header('X-XSS-Protection: 1; mode=block');
+header('X-Permitted-Cross-Domain-Policies: none');
+header('X-Frame-Options: SAMEORIGIN');
+// header("Content-Security-Policy: default-src 'self'; script-src 'self';");
+// header("X-Content-Security-Policy: default-src 'self'; script-src 'self';");
+
 $app->get('/', function () use ($siteConfigs) {
     
     $viewData = array(
@@ -157,7 +166,9 @@ $app->get('/People', function () use ($siteConfigs) {
     }
    
     $subscribers = getSubscriberList($siteConfigs, $page);
-
+    
+    $subscriberList = empty($subscribers['List']) ? array() : $subscribers['List'];
+    
     // unfortunately for pagination to work we must make a second 
     // request to test if there are more subscribers available
     $lookahead = getSubscriberList($siteConfigs, $page + 1 );
@@ -276,9 +287,11 @@ $app->get('/Playground', function () use ($siteConfigs) {
 
 
 /* 
- * Ajax endpoint
+ * Ajax endpoint $siteConfigs['ajaxEndpointSlug']
  */
-$app->post($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
+$app->post('/ajax', function () use ($siteConfigs) {
+    
+    $response = array();
     
     if (! isset($_SESSION["user"])) {
         $response["success"] = false;
@@ -291,8 +304,8 @@ $app->post($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
         $response["action"]  = "";
     }
     else{
-        
         $action = filter_var($_POST['action'], FILTER_SANITIZE_STRING);
+
         switch($action){
             case 'suspendUser':
             case 'unsuspendUser':
@@ -301,9 +314,8 @@ $app->post($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
                 
                 $functionResponse = suspendUser($siteConfigs, $_POST['subscriberId'], $suspend);
                 
-                if($functionResponse == true){
+                if($functionResponse["success"] == true){
                     $response["success"] = true;
-                    $response["debug"] = $functionResponse;
                 }
                 else{
                     $response["success"] = false;
@@ -314,6 +326,10 @@ $app->post($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
                 break;
                 
             default:
+                $response["success"] = false;
+                $response["message"] = "Sorry, an error occurred processing your request.";
+                $response["action"]  = "";
+                $response["debug"] = "default case";
         }
     }
     
@@ -322,7 +338,10 @@ $app->post($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
 });
 
 
-$app->get($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
+//$siteConfigs['ajaxEndpointSlug']
+$app->get('/ajax' , function () use ($siteConfigs) {
+    
+    $response = array();
     
     if (! isset($_SESSION["user"])) {
         $response["success"] = false;
@@ -342,9 +361,10 @@ $app->get($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
             case 'searchUser':
                 if(empty($_GET['dataString']) || filter_var($_GET['dataString'], FILTER_SANITIZE_STRING) === false || strlen($_GET['dataString']) < 3){
                     $response["success"] = false;
-                }else{
+                }
+                else{
                     $functionResponse = searchUser($siteConfigs, $_GET['dataString'] );
-                    echo json_encode($functionResponse) ; exit;
+
                     if($functionResponse){
                         $response["success"] = true;
                         $response["suggestions"] = $functionResponse;
@@ -359,9 +379,6 @@ $app->get($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
                 break;
             default:
         }
-        
-        
-        
     }
     
     echo json_encode($response);
