@@ -31,6 +31,24 @@ function str_lreplace($search, $replace, $subject)
     return $subject;
 }
 
+/**
+ *
+ * @param mixed $input
+ *            string or array to be sanitized
+ * @return mixed sanitized input as output
+ */
+function sanitize_input($input)
+{
+    if (! is_array($input)) {
+        return filter_var(trim($input), FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_LOW | FILTER_FLAG_STRIP_HIGH);
+    } else {
+        foreach ($input as $key => $value) {
+            $input[$key] = sanitize_input($value);
+        }
+    }
+    return $input;
+}
+
 function sanitize_output($buffer)
 {
     $search = array(
@@ -217,12 +235,13 @@ function getUserRoles($siteConfigs, $userEmail)
  * @param type $_pageSize
  * @return type
  */
-function getSubscriberList($siteConfigs, $_pageNumber = 1, $_pageSize = 20)
+function getSubscriberList($siteConfigs, $_pageNumber = 1, $_pageSize = 15)
 {
-    $url = $_SESSION['environment'] . $siteConfigs['subscriberListSlug'] . "_pageNumber=" . $_pageNumber . "&_pageSize=" . $_pageSize;
-    echo "<br> $url </hr>";
-    $response = \Httpful\Request::get($url )->addHeader('Authorization', $_SESSION['access_token_header'])->send();
-    var_dump($response); exit;
+    
+    $url = $_SESSION['environment'] . $siteConfigs['subscriberResourceSlug'] . "?_pageNumber=" . $_pageNumber . "&_pageSize=" . $_pageSize;
+    
+    $response = \Httpful\Request::get($url)->addHeader('Authorization', $_SESSION['access_token_header'])->send();
+    
     return json_decode($response, true);
 }
 
@@ -389,5 +408,48 @@ function setApiTokens($siteConfigs, $postArr)
         return $function_response;
     }
     return $function_response;
+}
+
+
+/**
+ * 
+ * @param Array $siteConfigs
+ * @param int $id The user id
+ * @param boolean $suspend This dictates to suspend or unsuspend the user  
+ * @return boolean|\Httpful\Response
+ */
+function suspendUser($siteConfigs, $id, $suspend = true)
+{
+    
+    if (! (isset($_SESSION['environment'], $_SESSION['user']) && ctype_digit($id) && $id > 0)) {
+        return false;
+    }
+    
+    $xop = ($suspend) ? 'suspendSubscriber' :'unSuspendSubscriber' ;
+   
+    $url = $_SESSION['environment'] . $siteConfigs['subscriberResourceSlug'] . '/' . $id ;
+    $response = \Httpful\Request::post($url )->addHeaders(array(
+        'Authorization' => $_SESSION['access_token_header'],
+        'x-operation' => $xop
+    ))->send();
+    
+    return $response;
+
+}
+
+function searchUser($siteConfigs, $searhString, $searchOnlyNameAndEmail = true){
+    if (! (isset($_SESSION['environment'], $_SESSION['user']) && ctype_alnum($searhString) )) {
+        return false;
+    }
+    
+    $nameEmail = $searchOnlyNameAndEmail ? "true" : "false"; 
+    
+    $url = $_SESSION['environment'] . $siteConfigs['searchPeopleSlug'] . "?searchOnlyNameAndEmail=" . $nameEmail . "&query=" . $searhString ;
+    
+    $response = \Httpful\Request::get($url )->addHeaders(array(
+        'Authorization' => $_SESSION['access_token_header'],
+    ))->send();
+    
+    return  array("url" => $url, 'token' =>  $_SESSION['access_token_header'], 'functionResponseIs' => $response);
 }
 ?>

@@ -1,18 +1,94 @@
 {% extends "base.twig" %}
 
 {% block head %}
-    {{ parent() }}
+{{ parent() }}
 {% endblock %}
 
 {% block content %}
 
-    <div id="Home">
-		
-        <div class="container">
-            <div class="row">
-            	{{ dump(subscribers) }}
+<div id="Home">
+	<div class="container">
+		{% if subscribers|length == 0 and more == 0  %}
+		<div class="alert alert-{{ siteConfigs['boostrapAlertTypes'][2] }}"
+			role="alert">
+			<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+			<span class="sr-only">Error:</span>There are no more user accounts to display. 
+			 Click <strong><a href='{{ siteConfigs['website_www'] }}/People'>here</a></strong> to return to the start.
+		</div>
+		{% else %}
+		<div class="row">
+			<div class="col-lg-10"></div>
+			
+			<div class="col-lg-2" id="peopleSearchDiv">
+				<form>
+    		    	<div class="input-group" id="peopleSearchIG">
+        		    	    <input type="text" class="form-control" placeholder="Search.." id="peopleSearch" aria-describedby="loading-addon">
+        		    	    <div class="input-group-addon" id="loading-addon"><div id="spinnerSpan" class=""> &nbsp; </div> </div>
+                        <select class="selectpicker hidden show-tick show-menu-arrow" title="">
+                        </select>
+                	</div>
+            	</form>
+				<script>
+				$(document).ready(function() {
+					// js specific to the People page
+					setupPeopleSearch();
+				});
+				</script>
             </div>
-        </div>
-    </div>
+		</div>
+		<div class="row">
+			<table class="table table-responsive-md table-hover" id="subscriberListTable">
+				<thead class="thead-light">
+					<tr>
+						<th scope="col"></th>
+						<th scope="col">Name</th>
+						<th scope="col">Email</th>
+						<th scope="col">Role</th>
+						<th scope="col">Status</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for subscriber in subscribers %}
+					<tr subscriberId={{ subscriber.Id }}>
+						<td scope="row" class='subscriberOptions'></td>
+						<td>{{  subscriber.Person.DisplayName }}</td>
+						<td>{{  subscriber.Person.EmailAddress }}</td>
+						<td>{% for role in subscriber.Person.RoleSet %} {{ role }} <br />
+							{% endfor %}</td>
+						{% set userState = subscriber.SubscriberState|lower|capitalize|replace({'_' : ' '}) %}
+						{% if userState == 'Active' %}
+						{% set class = 'bg-success'  %}
+						{% elseif userState == 'Pending' %}
+						{% set class = 'bg-info'  %}
+						{% elseif userState == 'Remove pending' %}
+						{% set class = 'bg-warning'  %}
+						{% endif %}
+						<td class="{{ class }} user_state">{{ userState }}</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		<div class="row">
+			<div id="list_nav">
+    			<nav aria-label="...">
+                  <ul class="pager">
+                  	{% if page <= 1 %}
+                  	{% set disableBack="disabled" %}
+                  	{%  endif %}
+                    <li class="{{ disableBack }}"><a href="{{ siteConfigs['website_www'] }}/People?page={{ page - 1 }}"><i class="glyphicon glyphicon-chevron-left"></i> Previous</a></li>
+                    
+                    {% if more == 0 %}
+                    {% set disableNext="disabled" %}
+                    {% endif %}
+                    <li class="{{ disableNext }}"><a href="{{ siteConfigs['website_www'] }}/People?page={{ page + 1 }}">Next <i class="glyphicon glyphicon-chevron-right"></i></a></li>
+                    
+                  </ul>
+                </nav>
+			</div>
+		</div>
+		{% endif %}
+	</div>
+</div>
 
 {% endblock %}

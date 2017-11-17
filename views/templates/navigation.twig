@@ -7,10 +7,10 @@
             {% if session.user.name and session.user.email and session.user.customerid %}
                 <div id="app-options">
                     <ul class="nav navbar-nav nav-justified">
-                        <li class="active"><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Home">Home</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/People">People</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Communities">Communities</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Files">Files</a></li>
+                        <li class="active"><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Home"><i class="glyphicon glyphicon-home"></i> Home</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/People"><i class="glyphicon glyphicon-user"></i> People</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Communities"><i class="glyphicon glyphicon-list-alt"></i> Communities</a></li>
+                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Files"><i class="glyphicon glyphicon-file"></i> Files</a></li>
                     </ul>
                 </div>
 
@@ -30,5 +30,11 @@
             {% endif %}
         </div>
     </div><!-- /.navbar-collapse -->
+    
 </nav>
+<script>
+var ajaxEndpointUrl = '{{ siteConfigs['ajaxEndpointSlug'] }}';
+var adminID         = '{{ session.user.subscriberid}}';
+var adminEmail      = '{{ session.user.email}}';
+</script>
 

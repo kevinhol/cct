@@ -23,10 +23,7 @@ if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], "gzip")) {
 
 // sanitize all post array
 // this will also strip Extended ASCII Codes eg é ú ü
-foreach ($_POST as $key => $value) {
-    $key[$value] = filter_var(trim($value) , FILTER_FLAG_STRIP_LOW , FILTER_FLAG_STRIP_HIGH);
-}
-filter_var_array($_POST, FILTER_SANITIZE_STRING);
+sanitize_input($_POST);
 
 // hide all errors now;
 // error_reporting(0);
@@ -79,38 +76,36 @@ $app->post('/getApiTokens', function () use ($siteConfigs) {
     $setApiTokensResponse = setApiTokens($siteConfigs, $_POST);
     
     if (isset($setApiTokensResponse['error']) && isset($setApiTokensResponse['go_back']) && $setApiTokensResponse['go_back'] == true) {
-           
-            // we the referrer before redirection back to the location. 
-            $referrerUrl = parse_url($_SERVER['HTTP_REFERER']);
-            $designedReferrer = $siteConfigs['website_www'] . $siteConfigs['callBackSlug'];
-            $actualReferrer = $referrerUrl['scheme'] . "://" . $referrerUrl['host'] . $referrerUrl['path'];
-            
-            if($designedReferrer != $actualReferrer){
-                logout($siteConfigs, "Error detected with server referrer during token request", $siteConfigs['boostrapAlertTypes'][3]);
-            }
-            
-            $appendToUrl = getMsgToAppendToUrl($siteConfigs, $setApiTokensResponse['error'], $siteConfigs['boostrapAlertTypes'][3], 1);
-            
-            header('Location: ' . $_SERVER['HTTP_REFERER'] . $appendToUrl);
-            exit;
+        
+        // we the referrer before redirection back to the location.
+        $referrerUrl = parse_url($_SERVER['HTTP_REFERER']);
+        $designedReferrer = $siteConfigs['website_www'] . $siteConfigs['callBackSlug'];
+        $actualReferrer = $referrerUrl['scheme'] . "://" . $referrerUrl['host'] . $referrerUrl['path'];
+        
+        if ($designedReferrer != $actualReferrer) {
+            logout($siteConfigs, "Error detected with server referrer during token request", $siteConfigs['boostrapAlertTypes'][3]);
+        }
+        
+        $appendToUrl = getMsgToAppendToUrl($siteConfigs, $setApiTokensResponse['error'], $siteConfigs['boostrapAlertTypes'][3], 1);
+        
+        header('Location: ' . $_SERVER['HTTP_REFERER'] . $appendToUrl);
+        exit();
     } else if (isset($setApiTokensResponse['success'])) {
         // at this point we sbould be user authenicated and validated and have tokens to access api
         // show the homepage
         
         $userCreated = createUser($siteConfigs);
-
-        if($userCreated){
-            header('Location: '.  $siteConfigs['website_www'] . '/Home');
+        
+        if ($userCreated) {
+            header('Location: ' . $siteConfigs['website_www'] . '/Home');
             exit();
+        } else {
+            logout($siteConfigs, "Sorry we failed to retrieve your user account data.", $siteConfigs['boostrapAlertTypes'][3]); // failed to create the user
         }
-        else{
-            logout($siteConfigs, "Sorry we failed to retrieve your user account data.", $siteConfigs['boostrapAlertTypes'][3]); // failed to create the user             
-        }
-
     } else {
         // something weird has gone on.. time to debug
-        var_dump($setApiTokensResponse); 
-        exit;
+        var_dump($setApiTokensResponse);
+        exit();
         logout($siteConfigs, $setApiTokensResponse['error'], $siteConfigs['boostrapAlertTypes'][3]);
     }
 });
@@ -120,10 +115,10 @@ $app->post('/login', function () use ($siteConfigs) {
     if (verifyEnvSelection($siteConfigs, $_POST) && verifyAppID($siteConfigs, $_POST)) {
         
         $_SESSION['environment'] = $_POST['environment'];
-        $_SESSION['client_id']   = $_POST['app-id'];
+        $_SESSION['client_id'] = $_POST['app-id'];
         
         // buildcall backurl
-        $Oauth_url = $_POST['environment'] . $siteConfigs['oAuthAuthorizationSlug'] . $siteConfigs['website_www'] . $siteConfigs['callBackSlug'] . "&client_id=" . $_SESSION['client_id'];
+        $Oauth_url = $_SESSION['environment'] . $siteConfigs['oAuthAuthorizationSlug'] . $siteConfigs['website_www'] . $siteConfigs['callBackSlug'] . "&client_id=" . $_SESSION['client_id'];
         
         // should check the cloud server response to a bad app-id value .. eg "oauth_invalid_clientid" if the user is already logged in
         
@@ -151,22 +146,30 @@ $app->get('/Home', function () use ($siteConfigs) {
 $app->get('/People', function () use ($siteConfigs) {
     
     if (! isset($_SESSION["user"])) {
-        logout($siteConfigs, "You are not logged in yet", true);
+        logout($siteConfigs, "You are not logged in yet", $siteConfigs['boostrapAlertTypes'][2]);
     }
-    
-    $subscribers = getSubscriberList($siteConfigs);
-    $persons[] = array();
-    
-    if (count($subscribers['List'])) {
-        foreach ($subscribers['List'] as $key => $value) {
-            array_push($persons, $value['Person']);
-        }
+
+    // set up for pagination
+    if( isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 1 ){
+        $page = $_GET['page'];
+    }else{
+        $page = 1;
     }
+   
+    $subscribers = getSubscriberList($siteConfigs, $page);
+
+    // unfortunately for pagination to work we must make a second 
+    // request to test if there are more subscribers available
+    $lookahead = getSubscriberList($siteConfigs, $page + 1 );
+    
+    $more = empty($lookahead['List']) ? 0 : 1;
     
     $viewData = array(
         'title' => 'People',
         'siteConfigs' => $siteConfigs,
-        'subscribers' => $persons
+        'subscribers' => $subscribers['List'],
+        'page' => $page,
+        'more' => $more
     );
     $view = ViewFactory::createTwigView("People");
     $view->display($viewData);
@@ -201,7 +204,8 @@ $app->get('/Files', function () use ($siteConfigs) {
 });
 
 $app->get('/logout', function () use ($siteConfigs) {
-    logout($siteConfigs, "You have successfully logged out", $siteConfigs['boostrapAlertTypes'][0]);
+    
+    logout($siteConfigs, "You have been successfully logged out", $siteConfigs['boostrapAlertTypes'][0]);
 });
 
 $app->notFound(function () use ($siteConfigs) {
@@ -213,5 +217,157 @@ $app->notFound(function () use ($siteConfigs) {
     $view->display($viewData);
 });
 
+$app->get('/logout', function () use ($siteConfigs) {
+    logout($siteConfigs, "You have successfully logged out", $siteConfigs['boostrapAlertTypes'][0]);
+});
+
+
+
+$app->get('/Playground', function () use ($siteConfigs) {
+    
+    $subscribers = array();
+    $subscribers['List'] = array();
+    
+    for ($i = 0; $i < 5; $i ++) {
+        
+        $state = ($i % 2 == 0) ? "ACTIVE" : "PENDING";
+        if($i== 3 ){
+            $state = "REMOVE_PENDING";
+        }
+        $person = array(
+            "Id" => $i,
+            "Person" => array(
+                "DisplayName" => "TestU" . $i,
+                "EmailAddress" => "TestU" . $i . "@mail.com",
+                "RoleSet" => array(
+                    "User", "Administrator"
+                )
+            ),
+            "SubscriberState" => $state
+            
+        );
+        
+        array_push($subscribers['List'], $person);
+    }
+    
+    // set up for pagination
+    if( isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 1 ){
+        $page = $_GET['page'];
+    }else{
+        $page = 1;
+    }
+      
+    // unfortunately for pagination to work we must make a second
+    // request to test if there are more subscribers available
+   // $lookahead = getSubscriberList($siteConfigs, $page + 1 );
+    $more = 1;
+    
+    $viewData = array(
+        'title' => 'People',
+        'siteConfigs' => $siteConfigs,
+        'subscribers' => $subscribers['List'],
+        'page' => $page,
+        'more' => $more
+    );
+
+    $view = ViewFactory::createTwigView("Playground");
+    $view->display($viewData);
+});
+
+
+/* 
+ * Ajax endpoint
+ */
+$app->post($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
+    
+    if (! isset($_SESSION["user"])) {
+        $response["success"] = false;
+        $response["message"] = "You are not logged in";
+        $response["action"]  = "logout";
+    }
+    else if(! ( isset($_POST['action']) && in_array($_POST['action'], $siteConfigs['validAjaxActions'])) ){
+        $response["success"] = false;
+        $response["message"] = "Your request is not a valid";
+        $response["action"]  = "";
+    }
+    else{
+        
+        $action = filter_var($_POST['action'], FILTER_SANITIZE_STRING);
+        switch($action){
+            case 'suspendUser':
+            case 'unsuspendUser':
+                
+                $suspend = ($action == 'suspendUser')? true : false;
+                
+                $functionResponse = suspendUser($siteConfigs, $_POST['subscriberId'], $suspend);
+                
+                if($functionResponse == true){
+                    $response["success"] = true;
+                    $response["debug"] = $functionResponse;
+                }
+                else{
+                    $response["success"] = false;
+                    $response["message"] = "Sorry, an error occurred processing your request.";
+                    $response["action"]  = "";
+                    $response["debug"] = $functionResponse;
+                }
+                break;
+                
+            default:
+        }
+    }
+    
+    echo json_encode($response);
+    exit;
+});
+
+
+$app->get($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
+    
+    if (! isset($_SESSION["user"])) {
+        $response["success"] = false;
+        $response["message"] = "You are not logged in";
+        $response["action"]  = "logout";
+    }
+    else if(! ( isset($_GET['action']) && in_array($_GET['action'], $siteConfigs['validAjaxActions'])) ){
+        $response["success"] = false;
+        $response["message"] = "Your request is not a valid";
+        $response["action"]  = "";
+    }
+    else{
+        
+        $action = filter_var($_GET['action'], FILTER_SANITIZE_STRING);
+
+        switch($action){
+            case 'searchUser':
+                if(empty($_GET['dataString']) || filter_var($_GET['dataString'], FILTER_SANITIZE_STRING) === false || strlen($_GET['dataString']) < 3){
+                    $response["success"] = false;
+                }else{
+                    $functionResponse = searchUser($siteConfigs, $_GET['dataString'] );
+                    echo json_encode($functionResponse) ; exit;
+                    if($functionResponse){
+                        $response["success"] = true;
+                        $response["suggestions"] = $functionResponse;
+                    }
+                    else{
+                        $response["success"] = false;
+                        $response["message"] = "Sorry, an error occurred processing your request.";
+                        $response["action"]  = "";
+                        $response["debug"] = $functionResponse;
+                    }
+                }
+                break;
+            default:
+        }
+        
+        
+        
+    }
+    
+    echo json_encode($response);
+    exit;
+});
+    
+    
 $app->run();
 ?>

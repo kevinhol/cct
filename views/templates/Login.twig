@@ -27,10 +27,12 @@
                                         <div class="form-group">
 	                                        <div class="input-group">
                                                 <span class="input-group-addon"><i class="glyphicon glyphicon-globe"></i></span>
-	                                            <select name="environment" class="form-control" tabindex='1'>
+	                                            <select name="environment"  tabindex='1' class="form-control selectpicker show-tick show-menu-arrow" title="Select Environment.."  data-validation="required">
+	                                            	<optgroup label="Environment">
 	                                                {% for env in siteConfigs.cloudEnvs %}
-	                                                    <option class="form-control">{{ env }}</option>  
+	                                                    <option>{{ env }}</option>  
 	                                                {% endfor %}
+	                                                </optgroup>
 	                                            </select>
                                             </div>
                                         </div>
@@ -44,7 +46,7 @@
                                                 </div>    
                                                 <div class="col-lg-4 float-right">
 	                                                <div class="input-group" >
-	                                                	<button type="button submit" tabindex="2"  class="btn btn-primary login-btn form-control">Submit</button>
+	                                                	<button type="button submit" tabindex="3"  class="btn btn-primary login-btn form-control">Submit</button>
 	                                                	<span class="input-group-addon"><i class="glyphicon glyphicon-log-in"></i></span>
 	                                                </div>
                                                 </div>
