@@ -40,7 +40,11 @@ header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload'
 header('X-Content-Type-Options: nosniff');
 header('X-XSS-Protection: 1; mode=block');
 header('X-Permitted-Cross-Domain-Policies: none');
+header('access-control-allow-origin: ' . $siteConfigs['website_www']) ;
+
 header('X-Frame-Options: SAMEORIGIN');
+header('X-Powered-By: magik'); // don't let users know what is generating the pages 
+
 // header("Content-Security-Policy: default-src 'self'; script-src 'self';");
 // header("X-Content-Security-Policy: default-src 'self'; script-src 'self';");
 
