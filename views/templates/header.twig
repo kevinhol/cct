@@ -4,42 +4,39 @@
 
 <meta property="og:title" content="{{ siteConfigs['orgnization'] }}"/>
 <meta property="og:type" content="website"/>
-<meta property="og:url" content="{{ siteConfigs['website_url'] }}"/>
+<meta property="og:url" content="{{ siteConfigs['website_www'] }}"/>
 <meta property="og:site_name" content="{{ siteConfigs['orgnization'] }}"/>
 
 <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
-<meta name="robots" content="index,follow" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<link rel="stylesheet" href="css/reset.css" />
+<link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/font-awesome.css" />
+<link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/bootstrap.min.css" />
+<link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/bootstrap-select.min.css" />
+<link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/main.css" />
 
-{# ADD IN URLS FOR FONT CALLS EG:
-<link href='http://fonts.googleapis.com/css?family=Open+Sans|Changa+One' rel='stylesheet' type='text/css' />
-<link href="http://fonts.googleapis.com/css?family=Lobster|Cabin" rel="stylesheet" type="text/css">
-#}
+<script src="{{ siteConfigs['website_www'] }}/js/jquery-latest.min.js" nonce="{{ session.src_nonce_hash }}"></script>
+<script src="{{ siteConfigs['website_www'] }}/js/bootstrap.min.js" nonce="{{ session.src_nonce_hash }}"></script>
+<script src="{{ siteConfigs['website_www'] }}/js/bootstrap-select.min.js" nonce="{{ session.src_nonce_hash }}"></script>
+<script src="{{ siteConfigs['website_www'] }}/js/form-validator/jquery.form-validator.min.js" nonce="{{ session.src_nonce_hash }}"></script>
 
+{% if session.user is defined  %}
+<script nonce="{{ session.src_nonce_hash }}">
+var ajaxEndpointUrl = '{{ siteConfigs['ajaxEndpointSlug'] }}';
+var adminID         = '{{ session.user.subscriberid}}';
+var adminEmail      = '{{ session.user.email}}';
+</script>
+{% endif %}
+<script src="{{ siteConfigs['website_www'] }}/js/main.js" nonce="{{ session.src_nonce_hash }}"></script>
 
-<link rel="stylesheet" href="{{ siteConfigs['website_url'] }}/css/font-awesome.css" />
-<link rel="stylesheet" href="{{ siteConfigs['website_url'] }}/css/bootstrap.min.css" />
-<link rel="stylesheet" href="{{ siteConfigs['website_url'] }}/css/bootstrap-select.min.css" />
-
-<link rel="stylesheet" href="{{ siteConfigs['website_url'] }}/css/main.css" />
-
-<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-<!--[if lt IE 9]>
-  <script src="{{ siteConfigs['website_url'] }}/js/html5shiv.js"></script>
-  <script src="{{ siteConfigs['website_url'] }}/js/respond.min.js"></script>
-<![endif]-->
-
-<script src="{{ siteConfigs['website_url'] }}/js/modernizr.min.js"></script>
-<script src="{{ siteConfigs['website_url'] }}/js/jquery-latest.min.js"></script>
-<script src="{{ siteConfigs['website_url'] }}/js/bootstrap.min.js""></script>
-
-<script src="{{ siteConfigs['website_url'] }}/js/bootstrap-select.min.js"></script>
-
-<!-- form validation plugin -->
-<script src="{{ siteConfigs['website_url'] }}/js/jquery.form-validator.min.js"></script>
-
-<script src="js/main.js"></script>
+{% if title == 'People' %}
+<script nonce="{{ session.src_nonce_hash }}">
+	$(document).ready(function() {
+		// js specific to the People page
+		setupPeopleSearch();
+	});
+</script>
+{% endif %}

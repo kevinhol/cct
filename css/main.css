@@ -1,4 +1,4 @@
-/*  CA2 CSS */
+
 body {
 	padding-top: 90px;
 }
@@ -166,16 +166,18 @@ body {
 
 #login-form .input-group, #login-form .btn{
 	height: 45px;
+	font-size: 16px;
 }
-
+ #login-form li{
+ 	font-size: 16px;
+ }
+ 
 #login-form .dropdown-header{
 	margin-top: 10px;
 }
-#login-form  .dropdown-menu a.opt {
-	font-size: 16px;
-}
+
 #peopleSearchDiv{
-	padding-right: 0;
+/* 	padding-right: 0; */
 }
 
 /* spinning loading.. animation */
@@ -242,9 +244,9 @@ body {
 }
 
 #peopleSearchDiv{
-	padding: 0;
-	width: 50%;
-    float: right;
+/* 	padding: 0; */
+/* 	width: 50%; */
+/*     float: right; */
 }
 #peopleSearchDiv input{
 	border:none;
@@ -260,21 +262,68 @@ body {
 }
 
 #search-popover-content{
-	width: 40%;
-	margin-top: 38px;
-	position: absolute;
-	width: 100%;
-	left: 0;
 	z-index: 1000;
 	display: none;
-}
-
-#peopleSearchIG{
-	width: 40%;
-	float: right;
+    position: absolute; 
+    width: 500px;
+    min-width: 300px;
+    right: 0;
+    margin-top:10px;
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #fff;
+  	-webkit-box-shadow: 0px 0px 2px 0px rgba(0,0,0,0.75);
+	-moz-box-shadow: 0px 0px 2px 0px rgba(0,0,0,0.75);
+	box-shadow: 0px 0px 2px 0px rgba(0,0,0,0.75);
 }
 
 #search-popover-content .close{
-	top: -10px;
 	position: relative;
+    top: -38px;
+    color: #aaa;
+    opacity: 0.8;
+}
+#search-popover-content .close:hover{
+	opacity:1;
+}
+
+#infoBar button{
+	left: 0;
+	top: 0;
+}
+#infoBar .alert{
+	padding:6px;
+	margin-bottom: 0;
+}
+#people-search-row{
+	padding: 15px 15px 0 15px;
+}
+
+#search-container{
+	margin:0px;
+	padding:0px;	
+	position:relative;
+}
+#search-popover-content .alert{
+	text-align:center;
+}
+#search-popover-content .alert .close{
+	display: none;
+	
+}
+
+.borderless .list-group-item {
+    border: none;
+}
+#search-result-list{
+	margin: 10px 0 0 0;
+}
+
+#search-result-title{
+    font-size: 14px;
+    padding: 8px;
+    margin-top: 0;
+    background-color: #ddd;
+    width: fit-content;
+    border-radius: 4px;
 }

@@ -1,11 +1,11 @@
 <?php
+
 use Httpful\Request;
 
 // Slim auto loader
 require 'vendor/autoload.php';
 
 // Project specific libs & functions
-require_once 'libs/common.php';
 require_once 'libs/functions.php';
 
 // Load the site configs
@@ -25,28 +25,28 @@ if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], "gzip")) {
 // this will also strip Extended ASCII Codes eg é ú ü
 sanitize_input($_POST);
 
-// hide all errors now;
-// error_reporting(0);
-// ini_set("display_errors", 0);
-
 session_name($siteConfigs['user_session_key']);
 session_start();
 
 // Instantiate Slim
 $app = new \Slim\Slim();
 
-//start output of secure headers 
-header('Strict-Transport-Security: max-age=31536000; includeSubDomains; preload');
-header('X-Content-Type-Options: nosniff');
-header('X-XSS-Protection: 1; mode=block');
-header('X-Permitted-Cross-Domain-Policies: none');
-header('access-control-allow-origin: ' . $siteConfigs['website_www']) ;
+// set env for test/debug on localhost
+$debugMode = (substr($_SERVER['SERVER_NAME'], 0, strlen("localhost")) === "localhost") ? true : false;
+if ($debugMode) {
+    // for testing purposes of the UI
+    $siteConfigs['pages_with_forms'] = 'Playground';
+    
+    $siteConfigs["website_www"] = $siteConfigs["debug_website_www"];
+    $_SESSION['user']['subscriberid'] = 1;
+    $_SESSION['user']['email'] = 'test@test.com';
+} else {
+    // hide all errors now;
+    error_reporting(0);
+    ini_set("display_errors", 0);
+}
 
-header('X-Frame-Options: SAMEORIGIN');
-header('X-Powered-By: magik'); // don't let users know what is generating the pages 
-
-// header("Content-Security-Policy: default-src 'self'; script-src 'self';");
-// header("X-Content-Security-Policy: default-src 'self'; script-src 'self';");
+require_once 'secureHttpHeaders.php';
 
 $app->get('/', function () use ($siteConfigs) {
     
@@ -161,21 +161,21 @@ $app->get('/People', function () use ($siteConfigs) {
     if (! isset($_SESSION["user"])) {
         logout($siteConfigs, "You are not logged in yet", $siteConfigs['boostrapAlertTypes'][2]);
     }
-
+    
     // set up for pagination
-    if( isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 1 ){
+    if (isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 1) {
         $page = $_GET['page'];
-    }else{
+    } else {
         $page = 1;
     }
-   
+    
     $subscribers = getSubscriberList($siteConfigs, $page);
     
     $subscriberList = empty($subscribers['List']) ? array() : $subscribers['List'];
     
-    // unfortunately for pagination to work we must make a second 
+    // unfortunately for pagination to work we must make a second
     // request to test if there are more subscribers available
-    $lookahead = getSubscriberList($siteConfigs, $page + 1 );
+    $lookahead = getSubscriberList($siteConfigs, $page + 1);
     
     $more = empty($lookahead['List']) ? 0 : 1;
     
@@ -236,8 +236,6 @@ $app->get('/logout', function () use ($siteConfigs) {
     logout($siteConfigs, "You have successfully logged out", $siteConfigs['boostrapAlertTypes'][0]);
 });
 
-
-
 $app->get('/Playground', function () use ($siteConfigs) {
     
     $subscribers = array();
@@ -246,7 +244,7 @@ $app->get('/Playground', function () use ($siteConfigs) {
     for ($i = 0; $i < 5; $i ++) {
         
         $state = ($i % 2 == 0) ? "ACTIVE" : "PENDING";
-        if($i== 3 ){
+        if ($i == 3) {
             $state = "REMOVE_PENDING";
         }
         $person = array(
@@ -255,26 +253,27 @@ $app->get('/Playground', function () use ($siteConfigs) {
                 "DisplayName" => "TestU" . $i,
                 "EmailAddress" => "TestU" . $i . "@mail.com",
                 "RoleSet" => array(
-                    "User", "Administrator"
+                    "User",
+                    "Administrator"
                 )
             ),
             "SubscriberState" => $state
-            
+        
         );
         
         array_push($subscribers['List'], $person);
     }
     
     // set up for pagination
-    if( isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 1 ){
+    if (isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 1) {
         $page = $_GET['page'];
-    }else{
+    } else {
         $page = 1;
     }
-      
+    
     // unfortunately for pagination to work we must make a second
     // request to test if there are more subscribers available
-   // $lookahead = getSubscriberList($siteConfigs, $page + 1 );
+    // $lookahead = getSubscriberList($siteConfigs, $page + 1 );
     $more = 1;
     
     $viewData = array(
@@ -284,13 +283,12 @@ $app->get('/Playground', function () use ($siteConfigs) {
         'page' => $page,
         'more' => $more
     );
-
+    
     $view = ViewFactory::createTwigView("Playground");
     $view->display($viewData);
 });
 
-
-/* 
+/*
  * Ajax endpoint $siteConfigs['ajaxEndpointSlug']
  */
 $app->post('/ajax', function () use ($siteConfigs) {
@@ -300,83 +298,75 @@ $app->post('/ajax', function () use ($siteConfigs) {
     if (! isset($_SESSION["user"])) {
         $response["success"] = false;
         $response["message"] = "You are not logged in";
-        $response["action"]  = "logout";
-    }
-    else if(! ( isset($_POST['action']) && in_array($_POST['action'], $siteConfigs['validAjaxActions'])) ){
+        $response["action"] = "logout";
+    } else if (! (isset($_POST['action']) && in_array($_POST['action'], $siteConfigs['validAjaxActions']))) {
         $response["success"] = false;
         $response["message"] = "Your request is not a valid";
-        $response["action"]  = "";
-    }
-    else{
+        $response["action"] = "";
+    } else {
         $action = filter_var($_POST['action'], FILTER_SANITIZE_STRING);
-
-        switch($action){
+        
+        switch ($action) {
             case 'suspendUser':
             case 'unsuspendUser':
                 
-                $suspend = ($action == 'suspendUser')? true : false;
+                $suspend = ($action == 'suspendUser') ? true : false;
                 
                 $functionResponse = suspendUser($siteConfigs, $_POST['subscriberId'], $suspend);
                 
-                if($functionResponse["success"] == true){
+                if ($functionResponse["success"] == true) {
                     $response["success"] = true;
-                }
-                else{
+                } else {
                     $response["success"] = false;
                     $response["message"] = "Sorry, an error occurred processing your request.";
-                    $response["action"]  = "";
+                    $response["action"] = "";
                     $response["debug"] = $functionResponse;
                 }
                 break;
-                
+            
             default:
                 $response["success"] = false;
                 $response["message"] = "Sorry, an error occurred processing your request.";
-                $response["action"]  = "";
+                $response["action"] = "";
                 $response["debug"] = "default case";
         }
     }
     
     echo json_encode($response);
-    exit;
+    exit();
 });
 
-
-//$siteConfigs['ajaxEndpointSlug']
-$app->get('/ajax' , function () use ($siteConfigs) {
+// $siteConfigs['ajaxEndpointSlug']
+$app->get('/ajax', function () use ($siteConfigs) {
     
     $response = array();
     
     if (! isset($_SESSION["user"])) {
         $response["success"] = false;
         $response["message"] = "You are not logged in";
-        $response["action"]  = "logout";
-    }
-    else if(! ( isset($_GET['action']) && in_array($_GET['action'], $siteConfigs['validAjaxActions'])) ){
+        $response["action"] = "logout";
+    } else if (! (isset($_GET['action']) && in_array($_GET['action'], $siteConfigs['validAjaxActions']))) {
         $response["success"] = false;
         $response["message"] = "Your request is not a valid";
-        $response["action"]  = "";
-    }
-    else{
+        $response["action"] = "";
+    } else {
         
         $action = filter_var($_GET['action'], FILTER_SANITIZE_STRING);
-
-        switch($action){
+        
+        switch ($action) {
             case 'searchUser':
-                if(empty($_GET['dataString']) || filter_var($_GET['dataString'], FILTER_SANITIZE_STRING) === false || strlen($_GET['dataString']) < 3){
+                if (empty($_GET['dataString']) || filter_var($_GET['dataString'], FILTER_SANITIZE_STRING) === false || strlen($_GET['dataString']) < 3) {
                     $response["success"] = false;
-                }
-                else{
-                    $functionResponse = searchUser($siteConfigs, $_GET['dataString'] );
-
-                    if($functionResponse){
+                } else {
+                    $functionResponse = searchUser($siteConfigs, $_GET['dataString']);
+                    
+                    if ($functionResponse) {
                         $response["success"] = true;
                         $response["suggestions"] = $functionResponse;
-                    }
-                    else{
+                    } else {
                         $response["success"] = false;
                         $response["message"] = "Sorry, an error occurred processing your request.";
-                        $response["action"]  = "";
+                        $response["action"] = "";
                         $response["debug"] = $functionResponse;
                     }
                 }
@@ -386,9 +376,8 @@ $app->get('/ajax' , function () use ($siteConfigs) {
     }
     
     echo json_encode($response);
-    exit;
+    exit();
 });
-    
-    
+
 $app->run();
 ?>

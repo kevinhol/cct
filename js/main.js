@@ -15,6 +15,7 @@ function() {
 });
 
 function initFormValidations() {
+
 	$.formUtils
 			.addValidator({
 				name : 'exactly26chars',
@@ -63,7 +64,7 @@ function initFormValidations() {
 			});
 
 	// Initiate form validation
-	$.validate();
+	  $.validate();
 
 }
 
@@ -181,29 +182,20 @@ function editUser(id, name){
 function suspendUser(id, name){
 	showModal("Suspend user", "<strong>Action: </strong>Are you sure to suspend user '"+ name +"'?", "Cancel", "" , "btn-primary", id);
 	
-	
 	$('#confirmDialogAction').click(function(){
-		
+		var alertType;
+		var msg;
 		var jqxhr = $.ajax({
 			url: ajaxEndpointUrl,
 			type: "POST",
 			data: { "action":"suspendUser", "subscriberId": id },
 			dataType: "text",
 			success: function(resultData) {
+
 				var result = $.parseJSON(resultData);
-				
-				if(result.success == false && result.action == 'logout'){
-					$('#basicModal .modal-body').eq(0).html(buildAlert("alert-warning", "This action has failed. You will be redirected to login in to the service"));
-					$('#basicModal .modal-footer').eq(0).remove();
-					setTimeout(function(){ 
-						window.location.href = "/logout";
-					}, 3000);
-					
-				}
-				
 				if(result.success == true){
-					$('#basicModal .modal-body').eq(0).html(buildAlert("alert-success", "User "+ name +" has been successfully suspended"));
-					$('#basicModal .modal-footer').eq(0).remove();
+					alertType = "alert-success";
+					msg = "User "+ name +" has been successfully suspended"
 
 					// update the table cell with the user state 
 					$("#subscriberListTable tr[subscriberid='"+ id +"']").eq(0).find('td').eq(4).html("Suspended");
@@ -212,88 +204,85 @@ function suspendUser(id, name){
 					var actionLink = $("#subscriberListTable a[action='suspendUser:"+ id +"']");
 					actionLink.html("Unsuspend");
 					actionLink.attr("action", "unsuspendUser:"+ id);
-					
-					setTimeout(function(){ 
-						$('#basicModal').toggle();
-					}, 3000);
-					
-				}else if(result.success == false){
-					var msg = (typeof result.message !== 'undefined' && result.message.length > 0 )? result.message : "An unknown error occurred";
-					
-					$('#basicModal .modal-body').eq(0).html(buildAlert("alert-warning", msg));
-					$('#basicModal .modal-footer').eq(0).remove();
 				}
-				console.log(result);
-				
+				else{
+					alertType = "alert-warning";
+					msg = (typeof result.message !== 'undefined' && result.message.length > 0 )? result.message : "This action failed to process completely. An unknown error occurred";
+					
+					$('#basicModal .modal-body').eq(0).html(buildAlert(alertType, msg));
+					$('#basicModal .modal-footer').eq(0).remove();
+					
+					if(result.action == 'logout'){
+						setTimeout(function(){ 
+							window.location.href = "/logout";
+						}, 3000);
+						return;
+					}
+				}
+			
+				$('#infoBar').html(buildAlert(alertType, msg));
+				$('#basicModal button.close').click();
 			},
 			error: function (xhr, tst, err) {
-                console.log(err);
-            }   
-		});
-
-		// Set another completion function for the request above
-		jqxhr.always(function() {
-			
+	            console.log(err);
+				$('#infoBar').html();
+				$('#basicModal .modal-body').eq(0).html(buildAlert("alert-warning", "An unknown error occurred"));
+				$('#basicModal .modal-footer').eq(0).remove();
+	        }
 		});
 	});
-			
-
 }
 
 function unsuspendUser(id, name){
 	showModal("Unsuspend user", "<strong>Action: </strong>Are you sure to unsuspend user '"+ name +"'?", "Cancel", "", "btn-primary" , id);
+
 	$('#confirmDialogAction').click(function(){
-		
+		var alertType;
+		var msg;
 		var jqxhr = $.ajax({
 			url: ajaxEndpointUrl,
 			type: "POST",
 			data: { "action":"unsuspendUser", "subscriberId": id },
 			dataType: "text",
 			success: function(resultData) {
+
 				var result = $.parseJSON(resultData);
-				
-				if(result.success == false && result.action == 'logout'){
-					$('#basicModal .modal-body').eq(0).html(buildAlert("alert-warning", "This action has failed. You will be redirected to login in to the service"));
-					$('#basicModal .modal-footer').eq(0).remove();
-					setTimeout(function(){ 
-						window.location.href = "/logout";
-					}, 3000);
-					
-				}
-				
 				if(result.success == true){
-					$('#basicModal .modal-body').eq(0).html(buildAlert("alert-success", "User "+ name +" has been successfully unsuspended"));
-					$('#basicModal .modal-footer').eq(0).remove();
+					alertType = "alert-success";
+					msg = "User "+ name +" has been successfully reactivated"
 
 					// update the table cell with the user state 
 					$("#subscriberListTable tr[subscriberid='"+ id +"']").eq(0).find('td').eq(4).html("Active");
 					
 					//update the user options
-					var actionLink = $("#subscriberListTable a[action='unsuspendUser:"+ id +"']");
+					var actionLink = $("#subscriberListTable a[action='suspendUser:"+ id +"']");
 					actionLink.html("Suspend");
 					actionLink.attr("action", "suspendUser:"+ id);
-					
-					setTimeout(function(){ 
-						$('#basicModal').toggle();
-					}, 3000);
-					
-				}else if(result.success == false){
-					var msg = (typeof result.message !== 'undefined' && result.message.length > 0 )? result.message : "An unknown error occurred";
-					
-					$('#basicModal .modal-body').eq(0).html(buildAlert("alert-warning", msg));
-					$('#basicModal .modal-footer').eq(0).remove();
 				}
-				console.log(result);
-				
+				else{
+					alertType = "alert-warning";
+					msg = (typeof result.message !== 'undefined' && result.message.length > 0 )? result.message : "This action failed to process completely. An unknown error occurred";
+					
+					$('#basicModal .modal-body').eq(0).html(buildAlert(alertType, msg));
+					$('#basicModal .modal-footer').eq(0).remove();
+					
+					if(result.action == 'logout'){
+						setTimeout(function(){ 
+							window.location.href = "/logout";
+						}, 3000);
+						return;
+					}
+				}
+			
+				$('#infoBar').html(buildAlert(alertType, msg));
+				$('#basicModal button.close').click();
 			},
 			error: function (xhr, tst, err) {
-                console.log(err);
-            }
-		});
-
-		// Set another completion function for the request above
-		jqxhr.always(function() {
-			
+	            console.log(err);
+				$('#infoBar').html();
+				$('#basicModal .modal-body').eq(0).html(buildAlert("alert-warning", "An unknown error occurred"));
+				$('#basicModal .modal-footer').eq(0).remove();
+	        }
 		});
 	});
 }
@@ -332,8 +321,8 @@ function showModal(action, msg , btn1text, btn2text, btn2style , ref_id){
 }
 
 function buildAlert(alertStyle, msgHtml){
-	// basicModal , "user action completed successfully
-	return "<div class='alert "+ alertStyle +"' role='alert'>" + msgHtml + "</div>";
+	// basic dismissable Modal
+	return "<div class='alert "+ alertStyle +"  alert-dismissible' role='alert'><button type='button' class='close' data-dismiss='alert' aria-label='Close'><span aria-hidden='true'>&times;</span></button>" + msgHtml + "</div>";
 }
 
 function setupPeopleSearch(){
@@ -341,15 +330,17 @@ function setupPeopleSearch(){
 	var search = $("#peopleSearch");
 	var defaultTxt = search.attr("placeholder");
 	var spinnerSpan = $('#spinnerSpan');
-	
-	if(search.val().length == 0){
-		search.attr("placeholder", defaultTxt);
-	}
-	
+	var contentArea = $('#search-result-list');
+	var srTotal = $('#sr-total');
 	var loading = $( "#loading-addon" );
 	
+	var msgErr = " An unknown error has occurred. ";
+	var msgActFail = " This search action has failed. ";	
+	
 	search.keyup(function() {
-		search.attr("placeholder", "");
+		spinnerSpan.removeClass("loader");
+		contentArea.html('');
+		
 		var txt = search.val();
 		
 		if(txt.length >= 3){
@@ -365,42 +356,86 @@ function setupPeopleSearch(){
 				success: function(resultData) {
 
 					var result = $.parseJSON(resultData);
+				
 					console.log(result);
-					
-					if(result.success == false && result.action == 'logout'){
-						buildAlert("alert-warning", "This action has failed. You will be redirected to login in to the service");
 
-						setTimeout(function(){ 
-							window.location.href = "/logout";
-						}, 3000);
+					if(typeof result.success === 'undefined' || result.success == false) {
+
+						var msg = msgActFail; 
 						
+						if(result.action == 'logout'){
+							if(typeof result.message === 'undefined' || result.message.length < 5){
+								msg+="You will be redirected to login in to the service";
+							}else{
+								msg+=result.message;
+							}
+							setTimeout(function(){ 
+								window.location.href = "/logout";
+							}, 3000);
+						}else{
+							msg+=msgEr;
+						}
+						contentArea.html(buildAlert("alert-warning", msg));
+						srTotal.html('0');
+						
+					}else if(result.success == true){
+						var totalResults = result.suggestions['totalResults'];
+						srTotal.html(totalResults);
+						
+						if(totalResults > 0){
+							var startIndex = result.suggestions['startIndex'];
+							var numResultsInCurrentPage = result.suggestions['numResultsInCurrentPage'];
+							var persons = result.suggestions['persons'];
+							
+							contentArea.html(buildSearchResultsContent(totalResults, persons, startIndex, numResultsInCurrentPage));
+						}
 					}
-					
-					if(result.success == true){
-					}
-					console.log(result);
 				},
 				error: function (xhr, tst, err) {
+					contentArea.html(buildAlert("alert-danger", msgActFail + msgErr));
+					spinnerSpan.removeClass("loader");
+					srTotal.html('0');
 	                console.log(err);
 	            }
 			});
 
 		}else{
 			spinnerSpan.removeClass("loader");
+			
+			if(txt.length == 0){
+				search.attr("placeholder", defaultTxt);
+				$('#search-popover-content').fadeOut();
+			}
 		}
 	
 	});
 	
 	search.blur(function(){
+		spinnerSpan.removeClass("loader");
+		
 		if(search.val().length == 0){
 			search.attr("placeholder", defaultTxt);
-			spinnerSpan.removeClass("loader");
+			$('#search-popover-content').fadeOut();
 		}
 	});
 
 	var closeBtn = $('#search-popover-content .close').eq(0);
 	
 	closeBtn.click(function(){
-		$('#search-popover-content').fadeOut();
+		$('#search-popover-content').fadeOut(); 
+		srTotal.html('0');
 	});
+}
+
+function buildSearchResultsContent(totalResults, persons, startIndex, numResultsInCurrentPage){
+	var html = "";
+	var items = "";	
+	$.each(persons, function(i, item) {
+		items += "<li class='list-group-item'>"+ persons[i].name + "</li>";
+		console.log(persons[i]);
+	});
+	
+	html += "<ul class='list-group'>" +items+  "</ul>";
+	
+	return html;
 }

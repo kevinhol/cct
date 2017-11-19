@@ -12,41 +12,43 @@
 		<div class="alert alert-{{ siteConfigs['boostrapAlertTypes'][2] }}"
 			role="alert">
 			<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-			<span class="sr-only">Error:</span>There are no more user accounts to display. 
-			 Click <strong><a href='{{ siteConfigs['website_www'] }}/People'>here</a></strong> to return to the start.
+			<span class="sr-only">Error:</span>There are no more user accounts to
+			display. Click <strong><a
+				href='{{ siteConfigs['website_www'] }}/People'>here</a></strong> to return to
+			the start.
 		</div>
 		{% else %}
 		<div class="row">
-			<div class="col-lg-10"></div>
-			
-			<div class="col-lg-2" id="peopleSearchDiv">
-				<form>
-    		    	<div class="input-group" id="peopleSearchIG">
-    		    	    <input type="text" class="form-control" placeholder="Search.." id="peopleSearch" aria-describedby="loading-addon">
-    		    	    <div class="input-group-addon" id="loading-addon"><div id="spinnerSpan" class=""> &nbsp; </div> </div>
-					</div>
+			<div id="search-container">
+				<div class="row">
+					<div class="col-lg-9" id="infoBar"></div>
 
-					<div id="search-popover-content" class="">
-					    <div class="panel panel-default">
-							<div class="panel-heading">
-     							<h3 class="panel-title"></h3>
-     							<button type="button" class="close"  aria-hidden="true">&times;</button>
+					<div class="col-lg-3" id="peopleSearchDiv">
+						<form>
+							<div class="input-group" id="peopleSearchIG">
+								<input type="text" class="form-control" placeholder="Search.."
+									id="peopleSearch" aria-describedby="loading-addon">
+								<div class="input-group-addon" id="loading-addon">
+									<div id="spinnerSpan" class="">&nbsp;</div>
+								</div>
 							</div>
-					        <div class="panel-body"></div>
-				        </div>
-					</div>
-            	</form>
-				<script>
-				$(document).ready(function() {
-					// js specific to the People a
-					setupPeopleSearch();
 
-				});
-				</script>
-            </div>
+						</form>
+					</div>
+				</div>
+				<div class="row">
+					<div id="search-popover-content" class="col-lg-12">
+						<h3 class="panel-title" id="search-result-title">Result total: <span class='badge' id="sr-total">0</span></h3>
+						<button type="button" class="close" aria-hidden="true">&times;</button>
+						<ul class="list-group" id="search-result-list"></ul>
+					</div>
+				</div>
+			</div>
+			<!--  end of container -->
 		</div>
 		<div class="row">
-			<table class="table table-responsive-md table-hover" id="subscriberListTable">
+			<table class="table table-responsive-md table-hover"
+				id="subscriberListTable">
 				<thead class="thead-light">
 					<tr>
 						<th scope="col"></th>
@@ -80,20 +82,25 @@
 		</div>
 		<div class="row">
 			<div id="list_nav">
-    			<nav aria-label="...">
-                  <ul class="pager">
-                  	{% if page <= 1 %}
-                  	{% set disableBack="disabled" %}
-                  	{%  endif %}
-                    <li class="{{ disableBack }}"><a href="{{ siteConfigs['website_www'] }}/People?page={{ page - 1 }}"><i class="glyphicon glyphicon-chevron-left"></i> Previous</a></li>
-                    
-                    {% if more == 0 %}
-                    {% set disableNext="disabled" %}
-                    {% endif %}
-                    <li class="{{ disableNext }}"><a href="{{ siteConfigs['website_www'] }}/People?page={{ page + 1 }}">Next <i class="glyphicon glyphicon-chevron-right"></i></a></li>
-                    
-                  </ul>
-                </nav>
+				<nav aria-label="...">
+					<ul class="pager">
+						{% if page <= 1 %}
+						{% set disableBack="disabled" %}
+						{%  endif %}
+						<li class="{{ disableBack }}"><a
+							href="{{ siteConfigs['website_www'] }}/People?page={{ page - 1 }}"><i
+								class="glyphicon glyphicon-chevron-left"></i> Previous</a></li>
+
+						{% if more == 0 %}
+						{% set disableNext="disabled" %}
+						{% endif %}
+						<li class="{{ disableNext }}"><a
+							href="{{ siteConfigs['website_www'] }}/People?page={{ page + 1 }}">Next
+								<i class="glyphicon glyphicon-chevron-right"></i>
+						</a></li>
+
+					</ul>
+				</nav>
 			</div>
 		</div>
 		{% endif %}

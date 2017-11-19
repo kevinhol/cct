@@ -32,9 +32,15 @@
     </div><!-- /.navbar-collapse -->
     
 </nav>
-<script>
-var ajaxEndpointUrl = '{{ siteConfigs['ajaxEndpointSlug'] }}';
-var adminID         = '{{ session.user.subscriberid}}';
-var adminEmail      = '{{ session.user.email}}';
+{% if title in siteConfigs['pages_with_forms']%}
+<script nonce="{{ session.src_nonce_hash }}">
+	$(document).ready(function() {
+
+	  $.validate({
+		    modules : 'security, sanitize toggleDisabled', 
+		    disabledFormFilter : 'form.toggle-disabled'
+	  });
+	});
 </script>
+{% endif %}
 

@@ -490,4 +490,16 @@ function searchUser($siteConfigs, $searhString, $searchOnlyNameAndEmail = true)
     
     return json_decode($response, true);
 }
+
+function get_src_nonce_hash($siteConfigs){
+    
+    if(isset($_SESSION['src_nonce_hash']) && strlen($_SESSION['src_nonce_hash']) == $siteConfigs['src_hash_length'] ) {
+        return $_SESSION['src_nonce_hash'] ;
+    }
+    $val = hash($siteConfigs['src_hash_algo'], time() . session_id() . $siteConfigs['src_hash_key'], false);
+    
+    $_SESSION['src_nonce_hash'] = $val;
+    
+    return $val;
+}
 ?>
