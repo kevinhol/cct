@@ -43,7 +43,7 @@ $csp = "Content-Security-Policy:
         default-src 'self';
         script-src 'self' 'nonce-$hash';
         style-src  'self';
-        img-src 'self';
+        img-src 'self' $callbackServers ;
         object-src 'none';
         frame-src 'none';
         font-src 'self';

@@ -40,7 +40,7 @@
 					<div id="search-popover-content" class="col-lg-12">
 						<h3 class="panel-title" id="search-result-title">Result total: <span class='badge' id="sr-total">0</span></h3>
 						<button type="button" class="close" aria-hidden="true">&times;</button>
-						<ul class="list-group" id="search-result-list"></ul>
+						<table class="table table-responsive-md table-hover" id="search-result-list"></table>
 					</div>
 				</div>
 			</div>
@@ -73,6 +73,9 @@
 						{% set class = 'bg-info'  %}
 						{% elseif userState == 'Remove pending' %}
 						{% set class = 'bg-warning'  %}
+						{% elseif userState == 'Soft deleted' %}
+						{% set class = 'bg-info'  %}
+						{% set userState = 'Trash' %}
 						{% endif %}
 						<td class="{{ class }} user_state">{{ userState }}</td>
 					</tr>

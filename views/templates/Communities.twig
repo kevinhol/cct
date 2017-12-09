@@ -1,16 +1,158 @@
 {% extends "base.twig" %}
 
 {% block head %}
-    {{ parent() }}
+{{ parent() }}
 {% endblock %}
 
 {% block content %}
+<div id="Communities">
+	<div class="container">
+		{% if communitiesList|length == 0 and more == 0  %}
+		<div class="alert alert-{{ siteConfigs['boostrapAlertTypes'][2] }}"
+			role="alert">
+			<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+			<span class="sr-only">Error:</span>There are no more Communities to
+			display. Click <strong><a
+				href='{{ siteConfigs['website_www'] }}/Communities'>here</a></strong> to
+			return to the start.
+		</div>
+		{% else %}
+		<div class="row">
+			<div id="search-container" class='container'>
+				<div class="row">
+					<div class="col-md-1">
+						Total:
+						{{ communitiesList|length }}
+					</div>
+					<div class="col-md-8" id="infoBar">
+						<div id='commMemberOptions' class='row'>
+							<div class='col-sm-10'>
+								<div class='progress'>
+									<div id="progressBar"
+										class='progress-bar progress-bar-primary progress-bar-striped'
+										role='progressbar' aria-valuenow='40' aria-valuemin='0'
+										aria-valuemax='100'>
+										<span class='sr-only'>40% Complete (success)</span>
+									</div>
+								</div>
+							</div>
+							<div class='col-sm-2'>
+								<button type='button' class='btn btn-primary' id='exportCommCSVbtn' data-toggle='modal' data-target='#basicModal'  data-action='exportCommList:{{ all }}'>
+									<i class='glyphicon glyphicon-cloud-download' aria-hidden='true' title='Download Communities list'></i>Export to CSV
+								</button>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-3" id="peopleSearchDiv">
+						<form>
+							<div class="input-group" id="peopleSearchIG">
+								<input type="text" class="form-control" placeholder="Search.."
+									id="dataSearch" aria-describedby="loading-addon">
+								<div class="input-group-addon" id="loading-addon">
+									<div id="spinnerSpan" class="">&nbsp;</div>
+								</div>
+							</div>
 
-    <div id="Home">
+						</form>
+					</div>
+				</div>
+				<div class="row">
+					<div id="search-popover-content" class="col-lg-12">
+						<h3 class="panel-title" id="search-result-title">Result total: <span class='badge' id="sr-total">0</span></h3>
+						<button type="button" class="close" aria-hidden="true">&times;</button>
+						<table class="table table-responsive-md table-hover" id="search-result-list"></table>
+					</div>
+				</div>
+			</div>
+			<!--  end of container -->
+		</div>
+		<div class="row">
+			<table class="table table-responsive-md table-hover"
+				id="communitiesListTable">
+				<thead class="thead-light">
+					<tr>
+						<th></th>
+						<th></th>
+						<th></th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for community in communitiesList %}
+					<tr data-communityUuid='{{ community['communityUuid'] }}'>
+						<td class='communityOptions'></td>
+						<td class="commLogoTd">{% if community['links']['logo'] is defined %} <img
+							src="{{ community['links']['logo'] }}" alt='' class='commLogo' />
+							{% endif %}
+						</td>
+						<td>
+							<h4>
+								<a href="{{ community['links']['alternate'] }}"  target="_blank">{{  community['title'] }}</a>
+								<span class="commAccess"> <span class="comm-type">
+										{% if community['type'] == 'publicInviteOnly' %} <span
+										class='comm-type-pio'><i class="fa user-times"
+											aria-hidden="true"
+											title='Community is invite only / moderated'></i></span>Moderated
+											{% elseif  community['type'] == 'private' %}
+										<span class='comm-type-pri'><i class="fa fa-lock"
+											aria-hidden="true" title='Community is private / restricted'></i>Restricted</span>
+										{% if community['isExternal'] != 'true' %} <span
+										class='comm-type-se'><i class="fa fa-arrow-up"
+											aria-hidden="true" title='Community can have External members'></i>Shared Externally</span>
+										{% endif %} {% endif %}
+								</span>
+								</span>
+							</h4>
+							<div class='commMiniInfos'>
+								<span><i class="fa fa-user" aria-hidden="true"></i></span>
+								{{  community['memberCount'] }}
+								<span class="vert-split">|</span> Last updated by
+								{{ community['author']['name'] }}
+								{% if community['author']['isExternal'] == 'true' %}
+									<span class='italic'> (external)</span>
+								{% endif %}
+								{% if community['author']['userState'] != 'active' %}
+									<span class='italic'> ({{ community['author']['userState'] }})</span>
+								{% endif %}
+								<span class="vert-split">|</span> 
+								{{ community['updated'] }}
+							</div>
+							<div class='commSummary truncate'>
+								{{ community['summary'] }}
+							</div>
+						</td>
+						<td></td>
+					</tr>
 
-        <div class="container">
-            <div class="row">
-        </div>
-    </div>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		<div class="row">
+			<div id="list_nav">
+				<nav aria-label="...">
+					<ul class="pager">
+						{% if prev < 1 %}
+						{% set disableBack = "disabled" %}
+						{%  endif %}
+						<li class="{{ disableBack }}"><a
+							href="{{ siteConfigs['website_www'] }}/Communities?page={{ prev }}"><i
+								class="glyphicon glyphicon-chevron-left"></i> Previous</a></li>
+
+						{% if next <= 1 %}
+						{% set disableNext = "disabled" %}
+						{% endif %}
+						<li class="{{ disableNext }}"><a
+							href="{{ siteConfigs['website_www'] }}/Communities?page={{ next }}">Next
+								<i class="glyphicon glyphicon-chevron-right"></i>
+						</a></li>
+
+					</ul>
+				</nav>
+			</div>
+		</div>
+		{% endif %}
+	</div>
+</div>
 
 {% endblock %}

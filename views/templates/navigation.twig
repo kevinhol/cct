@@ -1,46 +1,31 @@
 <nav class="navbar navbar-fixed-top bg-primary">
-    <div class="container-fluid">
-        <div class="collapse navbar-collapse bg-primary" id="bs-example-navbar-collapse-1">
-            <div>
-                <div class="navbar-brand bg-primary">{{ siteConfigs['organization'] }}</div>
-            </div>
-            {% if session.user.name and session.user.email and session.user.customerid %}
-                <div id="app-options">
-                    <ul class="nav navbar-nav nav-justified">
-                        <li class="active"><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Home"><i class="glyphicon glyphicon-home"></i> Home</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/People"><i class="glyphicon glyphicon-user"></i> People</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Communities"><i class="glyphicon glyphicon-list-alt"></i> Communities</a></li>
-                        <li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Files"><i class="glyphicon glyphicon-file"></i> Files</a></li>
-                    </ul>
-                </div>
+	<div class="container-fluid">
+		<div class="collapse navbar-collapse bg-primary"
+			id="bs-example-navbar-collapse-1">
+			<div>
+				<div class="navbar-brand bg-primary">
+					{{ siteConfigs['organization'] }}
+				</div>
+			</div>
+			{% if session.user.name and session.user.email and session.user.customerid %}
+			<div id="app-options">
+				<ul class="nav navbar-nav nav-justified">
+					<li class="active"><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Home"><i class="glyphicon glyphicon-home"></i> Home</a></li>
+					<li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/People"><i class="glyphicon glyphicon-user"></i> People</a></li>
+					<li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Communities"><i class="glyphicon glyphicon-list-alt"></i> Communities</a></li>
+					<li><a class="bg-primary" href="{{ siteConfigs['website_www'] }}/Files"><i class="glyphicon glyphicon-file"></i> Files</a></li>
+				</ul>
+			</div>
+			<ul class="nav navbar-nav navbar-right">
+				<li class="navbar-brand">Welcome {{ session.user.name }}</li>
+				<li>
+					<button class="btn btn-default navbar-btn" id="logoutBtn">Log out</button>
+				</li>
+			</ul>
+			{% endif %}
+		</div>
+	</div>
+	<!-- /.navbar-collapse -->
 
-
-                <ul class="nav navbar-nav navbar-right">
-                    <li class="navbar-brand">
-                        Welcome {{ session.user.name }}
-                    </li>
-                    <li>
-                        <button class="btn btn-default navbar-btn"> 
-                            <a href="{{ siteConfigs['website_www'] }}/logout">
-                                Log out
-                            </a>
-                        </button>
-                    </li>
-                </ul>
-            {% endif %}
-        </div>
-    </div><!-- /.navbar-collapse -->
-    
 </nav>
-{% if title in siteConfigs['pages_with_forms']%}
-<script nonce="{{ session.src_nonce_hash }}">
-	$(document).ready(function() {
-
-	  $.validate({
-		    modules : 'security, sanitize toggleDisabled', 
-		    disabledFormFilter : 'form.toggle-disabled'
-	  });
-	});
-</script>
-{% endif %}
 

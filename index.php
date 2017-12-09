@@ -1,7 +1,5 @@
 <?php
 
-use Httpful\Request;
-
 // Slim auto loader
 require 'vendor/autoload.php';
 
@@ -15,9 +13,16 @@ $siteConfigs = getSiteConfigs();
 require_once 'Autoloader.php';
 
 // Do server output compression
-if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], "gzip")) {
-    ob_start("ob_gzhandler");
-} else {
+
+if (! isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
+    ob_start(sanitize_output);
+} elseif (strpos(' ' . $_SERVER['HTTP_ACCEPT_ENCODING'], 'x-gzip') == false) {
+    if (strpos(' ' . $_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip') == false) {
+        ob_start("ob_gzhandler");
+    } elseif (! ob_start("ob_gzhandler")) {
+        ob_start("sanitize_output");
+    }
+} elseif (! ob_start("ob_gzhandler")) {
     ob_start("sanitize_output");
 }
 
@@ -33,17 +38,20 @@ $app = new \Slim\Slim();
 
 // set env for test/debug on localhost
 $debugMode = (substr($_SERVER['SERVER_NAME'], 0, strlen("localhost")) === "localhost") ? true : false;
+
 if ($debugMode) {
     // for testing purposes of the UI
     $siteConfigs['pages_with_forms'] = 'Playground';
     
     $siteConfigs["website_www"] = $siteConfigs["debug_website_www"];
+    $siteConfigs["ajaxEndpointSlug"] = $siteConfigs["application_project_base_folder"] . $siteConfigs["ajaxEndpointSlug"];
+    
     $_SESSION['user']['subscriberid'] = 1;
     $_SESSION['user']['email'] = 'test@test.com';
 } else {
     // hide all errors now;
-    error_reporting(0);
-    ini_set("display_errors", 0);
+    // error_reporting(0);
+    // ini_set("display_errors", 0);
 }
 
 require_once 'secureHttpHeaders.php';
@@ -90,7 +98,7 @@ $app->post('/getApiTokens', function () use ($siteConfigs) {
     
     if (isset($setApiTokensResponse['error']) && isset($setApiTokensResponse['go_back']) && $setApiTokensResponse['go_back'] == true) {
         
-        // we the referrer before redirection back to the location.
+        // we check the referrer before redirection back to the location.
         $referrerUrl = parse_url($_SERVER['HTTP_REFERER']);
         $designedReferrer = $siteConfigs['website_www'] . $siteConfigs['callBackSlug'];
         $actualReferrer = $referrerUrl['scheme'] . "://" . $referrerUrl['host'] . $referrerUrl['path'];
@@ -182,7 +190,7 @@ $app->get('/People', function () use ($siteConfigs) {
     $viewData = array(
         'title' => 'People',
         'siteConfigs' => $siteConfigs,
-        'subscribers' => $subscribers['List'],
+        'subscribers' => $subscriberList,
         'page' => $page,
         'more' => $more
     );
@@ -196,13 +204,61 @@ $app->get('/Communities', function () use ($siteConfigs) {
         logout($siteConfigs, "You are not logged in yet", $siteConfigs['boostrapAlertTypes'][2]);
     }
     
+    // setup for initial page load
+    if (isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 0) {
+        $page = $_GET['page'];
+    } else {
+        $page = $_GET['page'] = 1;
+    }
+    
+    $communities = getCommunitiesData($siteConfigs, $page);
+    // var_dump($communities);
+    $communitiesList = empty($communities['List']) ? array() : $communities['List'];
+    
+    // set up for pagination
+    $prev = (isset($communities['pagination']['prev'])) ? getPageNumFromCommUrl($communities['pagination']['prev']) : 0;
+    $next = (isset($communities['pagination']['next'])) ? getPageNumFromCommUrl($communities['pagination']['next']) : 1;
+    
+    // $last = getPageNumFromCommUrl($communities['pagination']['last']);
+    
     $viewData = array(
         'title' => 'Communities',
-        'siteConfigs' => $siteConfigs
+        'siteConfigs' => $siteConfigs,
+        'communitiesList' => $communitiesList,
+        'totalCount' => $communities['totalCommunityCount'],
+        'prev' => $prev,
+        'next' => $next
     );
     $view = ViewFactory::createTwigView("Communities");
     $view->display($viewData);
 });
+
+$app->get('/Community/Members/:Uuid', function ($Uuid) use ($siteConfigs) {
+    
+    if (! isset($_SESSION['environment'], $_SESSION['user'])) {
+        logout($siteConfigs, "You are not logged in yet", $siteConfigs['boostrapAlertTypes'][2]);
+    }
+    
+    if (! empty($Uuid) && filter_var($Uuid, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH | FILTER_FLAG_STRIP_LOW) !== false && preg_match($siteConfigs['commUuidRegex'], $Uuid)) {
+        
+        $data = getCommunityMembers($siteConfigs, $Uuid);
+        
+        $viewData = array(
+            'title' => 'Members for ',
+            'siteConfigs' => $siteConfigs,
+            "members" => $data['members'],
+            "invitees" => $data['invitees'],
+            'commUuid' => $Uuid,
+            'prev' => 0,
+            'next' => 2 // test temp vars
+        );
+        
+        $view = ViewFactory::createTwigView("CommunityMembers");
+        $view->display($viewData);
+    } else
+        echo "NO LOAD;";
+});
+        
 
 $app->get('/Files', function () use ($siteConfigs) {
     
@@ -216,6 +272,12 @@ $app->get('/Files', function () use ($siteConfigs) {
     );
     $view = ViewFactory::createTwigView("Files");
     $view->display($viewData);
+});
+
+$app->get('/downloadCSV', function () use ($siteConfigs) {
+        
+    require_once 'downloadCSV.php';
+    exit();
 });
 
 $app->get('/logout', function () use ($siteConfigs) {
@@ -232,66 +294,66 @@ $app->notFound(function () use ($siteConfigs) {
     $view->display($viewData);
 });
 
-$app->get('/logout', function () use ($siteConfigs) {
-    logout($siteConfigs, "You have successfully logged out", $siteConfigs['boostrapAlertTypes'][0]);
-});
-
-$app->get('/Playground', function () use ($siteConfigs) {
-    
-    $subscribers = array();
-    $subscribers['List'] = array();
-    
-    for ($i = 0; $i < 5; $i ++) {
+if ($debugMode) {
+    $app->get('/Playground', function () use ($siteConfigs) {
         
-        $state = ($i % 2 == 0) ? "ACTIVE" : "PENDING";
-        if ($i == 3) {
-            $state = "REMOVE_PENDING";
+        $subscribers = array();
+        $subscribers['List'] = array();
+        
+        for ($i = 0; $i < 10; $i ++) {
+            
+            $state = ($i % 2 == 0) ? "ACTIVE" : "PENDING";
+            if ($i == 3) {
+                $state = "REMOVE_PENDING";
+            }
+            if ($i == 8) {
+                $state = "SOFT_DELETED";
+            }
+            $person = array(
+                "Id" => $i,
+                "Person" => array(
+                    "DisplayName" => "TestU" . $i,
+                    "EmailAddress" => "TestU" . $i . "@mail.com",
+                    "RoleSet" => array(
+                        "User",
+                        "Administrator"
+                    )
+                ),
+                "SubscriberState" => $state
+            
+            );
+            
+            array_push($subscribers['List'], $person);
         }
-        $person = array(
-            "Id" => $i,
-            "Person" => array(
-                "DisplayName" => "TestU" . $i,
-                "EmailAddress" => "TestU" . $i . "@mail.com",
-                "RoleSet" => array(
-                    "User",
-                    "Administrator"
-                )
-            ),
-            "SubscriberState" => $state
         
+        // set up for pagination
+        if (isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 1) {
+            $page = $_GET['page'];
+        } else {
+            $page = 1;
+        }
+        
+        // unfortunately for pagination to work we must make a second
+        // request to test if there are more subscribers available
+        // $lookahead = getSubscriberList($siteConfigs, $page + 1 );
+        $more = 1;
+        
+        $viewData = array(
+            'title' => 'People',
+            'siteConfigs' => $siteConfigs,
+            'subscribers' => $subscribers['List'],
+            'page' => $page,
+            'more' => $more
         );
         
-        array_push($subscribers['List'], $person);
-    }
-    
-    // set up for pagination
-    if (isset($_GET['page']) && ctype_digit($_GET['page']) && $_GET['page'] > 1) {
-        $page = $_GET['page'];
-    } else {
-        $page = 1;
-    }
-    
-    // unfortunately for pagination to work we must make a second
-    // request to test if there are more subscribers available
-    // $lookahead = getSubscriberList($siteConfigs, $page + 1 );
-    $more = 1;
-    
-    $viewData = array(
-        'title' => 'People',
-        'siteConfigs' => $siteConfigs,
-        'subscribers' => $subscribers['List'],
-        'page' => $page,
-        'more' => $more
-    );
-    
-    $view = ViewFactory::createTwigView("Playground");
-    $view->display($viewData);
-});
-
+        $view = ViewFactory::createTwigView("Playground");
+        $view->display($viewData);
+    });
+}
 /*
  * Ajax endpoint $siteConfigs['ajaxEndpointSlug']
  */
-$app->post('/ajax', function () use ($siteConfigs) {
+$app->post($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
     
     $response = array();
     
@@ -304,7 +366,7 @@ $app->post('/ajax', function () use ($siteConfigs) {
         $response["message"] = "Your request is not a valid";
         $response["action"] = "";
     } else {
-        $action = filter_var($_POST['action'], FILTER_SANITIZE_STRING);
+        $action = filter_var($_POST['action'], FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH | FILTER_FLAG_STRIP_LOW);
         
         switch ($action) {
             case 'suspendUser':
@@ -313,6 +375,36 @@ $app->post('/ajax', function () use ($siteConfigs) {
                 $suspend = ($action == 'suspendUser') ? true : false;
                 
                 $functionResponse = suspendUser($siteConfigs, $_POST['subscriberId'], $suspend);
+                
+                if ($functionResponse["success"] == true) {
+                    $response["success"] = true;
+                } else {
+                    $response["success"] = false;
+                    $response["message"] = "Sorry, an error occurred processing your request.";
+                    $response["action"] = "";
+                    $response["debug"] = $functionResponse;
+                }
+                break;
+            case 'deleteUser':
+                
+                $fullDelete = (isset($_REQUEST['soft']) && $_REQUEST['fullDelete'] == true) ? true : false;
+                
+                $functionResponse = deleteUser($siteConfigs, $_POST['subscriberId'], $fullDelete);
+                
+                if ($functionResponse["success"] == true) {
+                    $response["success"] = true;
+                } else {
+                    $response["success"] = false;
+                    $response["message"] = "Sorry, an error occurred processing your request.";
+                    $response["action"] = "";
+                    $response["debug"] = $functionResponse;
+                }
+                break;
+            case 'restoreUser':
+                
+                $softDelete = (isset($_REQUEST['soft']) && $_REQUEST['soft'] == true) ? true : false;
+                
+                $functionResponse = restoreUser($siteConfigs, $_POST['subscriberId']);
                 
                 if ($functionResponse["success"] == true) {
                     $response["success"] = true;
@@ -337,7 +429,7 @@ $app->post('/ajax', function () use ($siteConfigs) {
 });
 
 // $siteConfigs['ajaxEndpointSlug']
-$app->get('/ajax', function () use ($siteConfigs) {
+$app->get($siteConfigs['ajaxEndpointSlug'], function () use ($siteConfigs) {
     
     $response = array();
     
@@ -351,11 +443,9 @@ $app->get('/ajax', function () use ($siteConfigs) {
         $response["action"] = "";
     } else {
         
-        $action = filter_var($_GET['action'], FILTER_SANITIZE_STRING);
-        
-        switch ($action) {
+        switch ($_GET['action']) {
             case 'searchUser':
-                if (empty($_GET['dataString']) || filter_var($_GET['dataString'], FILTER_SANITIZE_STRING) === false || strlen($_GET['dataString']) < 3) {
+                if (empty($_GET['dataString']) || filter_var($_GET['dataString'], FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH | FILTER_FLAG_STRIP_LOW) === false || strlen($_GET['dataString']) < 3) {
                     $response["success"] = false;
                 } else {
                     $functionResponse = searchUser($siteConfigs, $_GET['dataString']);

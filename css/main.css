@@ -111,11 +111,12 @@ body {
 	background-color: #42B32F;
 	color: white;
 }
-
-.navbar-btn {
-	margin-right: 20px;
+.navbar-btn{
+	margin: 0;
 }
-
+#logoutBtn{
+	margin: 8px 16px 8px 8px;
+}
 .panel-body {
 	padding: 10px;
 	margin: 20px;
@@ -243,11 +244,7 @@ body {
 	box-shadow: inset -1px 0px 0px 1px rgba(0,0,0,0.07);
 }
 
-#peopleSearchDiv{
-/* 	padding: 0; */
-/* 	width: 50%; */
-/*     float: right; */
-}
+#peopleSearchDiv{/* padding: 0; *//* 	width: 50%; *//*     float: right; */}
 #peopleSearchDiv input{
 	border:none;
 	-webkit-box-shadow: inset 1px 0px 0px 1px rgba(0,0,0,0.07);
@@ -265,8 +262,6 @@ body {
 	z-index: 1000;
 	display: none;
     position: absolute; 
-    width: 500px;
-    min-width: 300px;
     right: 0;
     margin-top:10px;
     border-radius: 5px;
@@ -279,21 +274,20 @@ body {
 
 #search-popover-content .close{
 	position: relative;
-    top: -38px;
     color: #aaa;
     opacity: 0.8;
+    display: inline-block;
 }
 #search-popover-content .close:hover{
 	opacity:1;
 }
 
-#infoBar button{
-	left: 0;
-	top: 0;
-}
 #infoBar .alert{
 	padding:6px;
 	margin-bottom: 0;
+}
+#infoBar .alert-dismissible .close{
+	right: 0px;
 }
 #people-search-row{
 	padding: 15px 15px 0 15px;
@@ -309,7 +303,6 @@ body {
 }
 #search-popover-content .alert .close{
 	display: none;
-	
 }
 
 .borderless .list-group-item {
@@ -317,6 +310,8 @@ body {
 }
 #search-result-list{
 	margin: 10px 0 0 0;
+	max-height: 450px;
+    overflow: scroll;
 }
 
 #search-result-title{
@@ -326,4 +321,131 @@ body {
     background-color: #ddd;
     width: fit-content;
     border-radius: 4px;
+    display: inline-block;
+}
+#search-result-list  .span{
+
+    display: inline-block;
+    border: 1px solid;
+    margin-right: 0 5px;
+}
+#deleteUserWarning{
+	display: none;
+	margin-top: 10px;
+	padding:8px;
+}
+.commLogoTd{
+	 max-width: 70px;
+}
+.commLogo{
+    max-width: 50px;
+    border-radius: 50%;
+}
+#communitiesListTable h4, #communitiesMembersListTable h4, #communitiesInviteeListTable h4{
+	font-size: 16px;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.commMiniInfos, .commAccess {
+	font-size: 11px;
+}
+.commMiniInfos .fa-user{
+	margin-right: 5px;
+	color: #337ab7;
+    font-size: 12px;
+}
+.truncate {
+/*   width: 530px; */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.communityOptions .dropdown{
+	margin-top: 10px;
+}
+
+.commMiniInfos span{
+	margin: 0px 6px 0px 0px
+    font-size: 16px;
+    color: #bbb;
+}
+
+.commMiniInfos span:first-child{
+	margin-left: 0;
+}
+.vert-split{
+	margin: 6px;
+}
+
+.commSummary{
+	max-width: 660px;
+	font-size: 12px;
+}
+
+.commAccess .fa-arrow-up{
+    -ms-transform: rotate(45deg); /* IE 9 */
+    -webkit-transform: rotate(45deg); /* Chrome, Safari, Opera */
+    transform: rotate(45deg); 
+        background-color: #f4c416;
+
+}
+.commAccess i{
+    margin: 0 3px 0 6px;
+    color: black;
+    border-radius: 50%;
+}
+.commAccess .fa-lock{
+	color: #ea3c3c;
+    font-size: 15px;
+    padding: 0;
+}
+
+.commAccess .fa-arrow-up{
+	position: relative;
+    top: -3px;
+    padding: 2px;
+}
+
+.commAccess i:after{
+	margin-left: 5px;
+}
+
+
+
+.italic{
+	font-style: italic;
+}
+
+.mem_active{
+	color: #00DD00;
+	margin-right: 6px;
+}
+.mem_inactive{
+	color: #dbdbdb;
+	margin-right: 6px;
+}
+
+#commMemberOptions .progress{
+	display: none;
+	height: 35px;
+	margin: 0 ;
+}
+#commMemberOptions .progress-bar{
+	display: block;
+	width: 0%;
+	height: 35px;
+}
+
+#exportCommMembersCSVbtn, #exportCommCSVbtn{
+	float:right;
+/* 	width: 100%; */
+}
+
+.glyphicon-cloud-download{
+	margin-right: 6px
+}
+
+#uploadProfileImages i {
+	margin-right: 10px;
 }

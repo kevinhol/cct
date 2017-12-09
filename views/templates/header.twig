@@ -1,5 +1,5 @@
 
-<link rel="icon" href="images/favicon.ico" type="image/x-icon"/>
+<link rel="icon" href="{{ siteConfigs['website_www'] }}/images/favicon.ico" type="image/x-icon"/>
 <!-- Icon made by https://www.flaticon.com/authors/icomoon from www.flaticon.com  -->
 
 <meta property="og:title" content="{{ siteConfigs['orgnization'] }}"/>
@@ -13,15 +13,16 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 
-<link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/font-awesome.css" />
+<link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/font-awesome.min.css" />
 <link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/bootstrap.min.css" />
 <link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/bootstrap-select.min.css" />
 <link rel="stylesheet" href="{{ siteConfigs['website_www'] }}/css/main.css" />
 
-<script src="{{ siteConfigs['website_www'] }}/js/jquery-latest.min.js" nonce="{{ session.src_nonce_hash }}"></script>
+<script src="{{ siteConfigs['website_www'] }}/js/jquery.min.js" nonce="{{ session.src_nonce_hash }}"></script>
 <script src="{{ siteConfigs['website_www'] }}/js/bootstrap.min.js" nonce="{{ session.src_nonce_hash }}"></script>
 <script src="{{ siteConfigs['website_www'] }}/js/bootstrap-select.min.js" nonce="{{ session.src_nonce_hash }}"></script>
 <script src="{{ siteConfigs['website_www'] }}/js/form-validator/jquery.form-validator.min.js" nonce="{{ session.src_nonce_hash }}"></script>
+
 
 {% if session.user is defined  %}
 <script nonce="{{ session.src_nonce_hash }}">
@@ -32,11 +33,3 @@ var adminEmail      = '{{ session.user.email}}';
 {% endif %}
 <script src="{{ siteConfigs['website_www'] }}/js/main.js" nonce="{{ session.src_nonce_hash }}"></script>
 
-{% if title == 'People' %}
-<script nonce="{{ session.src_nonce_hash }}">
-	$(document).ready(function() {
-		// js specific to the People page
-		setupPeopleSearch();
-	});
-</script>
-{% endif %}

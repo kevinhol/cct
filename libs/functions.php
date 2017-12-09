@@ -109,10 +109,10 @@ function createUser($siteConfigs)
         return false;
     }
     
-    $user['userspace'] = "userspace/__" . hash_hmac('sha1', (time() . $user['email']), $siteConfigs['user_session_key']);
+    $user['userspace'] = "/userspace/__" . hash_hmac('sha1',  $user['email'], $siteConfigs['user_session_key']) . "/";
     
     setUserSessionVars($siteConfigs, $user);
-    
+    var_dump($user, $_SESSION);
     return true;
 }
 
@@ -465,15 +465,101 @@ function suspendUser($siteConfigs, $id, $suspend = true)
     // Finish CUrL
     $ret['success'] = count($success) ? true:false;  
     
-//     $httpful = \Httpful\Request::post($url)->addHeaders(array(
-//         'Authorization' => $_SESSION['access_token_header'],
-//         'x-operation' => $xop
-//     ))->send();
+    return $ret;
+}
+
+function restoreUser($siteConfigs, $id)
+{
+    if (! (isset($_SESSION['environment'], $_SESSION['user']) && ctype_digit($id) && $id > 0)) {
+        return false;
+    }
     
-//     $ret['httpful'] = json_decode($httpful);
+    $url = $_SESSION['environment'] . $siteConfigs['subscriberResourceSlug'] . '/' . $id;
+    
+    $ret = [];
+    
+    // Set up CUrL
+    $headers[] = 'Authorization: ' . $_SESSION['access_token_header'] ;
+    $headers[] = 'x-operation: restoreSubscriber' ;
+    
+    $fields = [
+        "id" => $id ,
+    ];
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_HEADER, 1); // return the response headers
+    
+    $response = curl_exec($ch);
+    
+    if ($response === false) {
+        $return = ('Curl error: ' . curl_error($ch));
+        curl_close($ch);
+        return $return;
+    }
+    curl_close($ch);
+    
+    list($headers, $resp) = explode("\r\n\r\n", $response, 2);
+    
+    // https://www-10.lotus.com/ldd/appdevwiki.nsf/xpAPIViewer.xsp?lookupName=API+Reference#action=openDocument&res_title=HTTP_status_codes_bss&content=apicontent
+    // search for a HTTP/1.1 20X response header
+    $success = preg_grep($siteConfigs['http20Xheader'], explode("\n", $headers));
+    
+    // Finish CUrL
+    $ret['success'] = count($success) ? true:false;
     
     return $ret;
-//    return json_decode($response, true);
+}
+
+function deleteUser($siteConfigs, $id, $fullDelete = false)
+{
+    if (! (isset($_SESSION['environment'], $_SESSION['user']) && ctype_digit($id) && $id > 0)) {
+        return false;
+    }
+    
+    $fullDeleteParams = ($fullDelete) ? '': '?moveToSoftDelete=true' ;
+    
+    $url = $_SESSION['environment'] . $siteConfigs['subscriberResourceSlug'] . '/' . $id . $fullDeleteParams;
+    
+    $ret = [];
+    
+    // Set up CUrL
+    $headers[] = 'Authorization: ' . $_SESSION['access_token_header'] ;
+    
+    $fields = [
+        "id" => $id ,
+    ];
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+    // curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_HEADER, 1); // return the response headers
+    
+    $response = curl_exec($ch);
+    
+    if ($response === false) {
+        $return = ('Curl error: ' . curl_error($ch));
+        curl_close($ch);
+        return $return;
+    }
+    curl_close($ch);
+    
+    list($headers, $resp) = explode("\r\n\r\n", $response, 2);
+    
+    // https://www-10.lotus.com/ldd/appdevwiki.nsf/xpAPIViewer.xsp?lookupName=API+Reference#action=openDocument&res_title=HTTP_status_codes_bss&content=apicontent
+    // search for a HTTP/1.1 20X response header
+    $success = preg_grep($siteConfigs['http20Xheader'], explode("\n", $headers));
+    
+    // Finish CUrL
+    $ret['success'] = count($success) ? true:false;
+
+    return $ret;
 }
 
 function searchUser($siteConfigs, $searhString, $searchOnlyNameAndEmail = true)
@@ -502,4 +588,328 @@ function get_src_nonce_hash($siteConfigs){
     
     return $val;
 }
+
+function getCommunitiesData($siteConfigs, $pageNumber = 1, $pageSize = 15)
+{
+    $url = $_SESSION['environment'] . $siteConfigs['communitiesListSlug'] . "?page=" . $pageNumber . "&ps=" . $pageSize;
+    
+    $response = \Httpful\Request::get($url)->addHeader('Authorization', $_SESSION['access_token_header'])->send();
+    
+    return parseCommunityData($response);
+}
+
+function parseCommunityData($xml)
+{
+    // should be stored in main.ini ?
+    $linkRelArr = [
+        'logo',
+        'member-list',
+        'bookmarks',
+        'remote-applications',
+        'forum-topics',
+        'invitations-list',
+        'widgets',
+        'pages',
+        'subcommunities',
+        'activitystream',
+        'microblog',
+        'community-broadcasts'
+    ];
+    
+    // should be stored in main.ini ?
+    $relBase = 'http://www.ibm.com/xmlns/prod/sn/';
+    
+    $parsedCommunities = array();
+    
+    // in reality this will be the API response and will be called as $dom->loadXML(API_RESPONSE)
+    // $xmlSource = "C:\Users\IBM_ADMIN\Downloads\allcomm.xml";
+    
+    $dom = new DOMDocument();
+    $dom->preserveWhiteSpace = true;
+    $dom->loadXML($xml);
+    
+    $domList = $dom->getElementsByTagNameNS('http://a9.com/-/spec/opensearch/1.1/', '*');
+    
+    $feed_total_results = (stripos($domList->item(0)->tagName, 'totalResults') !== false) ? $domList->item(0)->textContent : 0;
+    
+    $feed_start_index = (stripos($domList->item(1)->tagName, 'startIndex') !== false) ? $domList->item(1)->textContent : 0;
+    
+    $feed_items_per_page = (stripos($domList->item(2)->tagName, 'itemsPerPage') !== false) ? $domList->item(2)->textContent : 0;
+    
+    // loop through the entries to set pagination links
+    $domList = $dom->getElementsByTagNameNS('http://www.w3.org/2005/Atom', 'link');
+    
+    $find = array("first", "last", "next", "prev");
+    
+    for($i = 0 ; $i < $domList->length; $i++){
+        
+        $item = $domList->item($i);
+        $rel = $item->getAttribute('rel');
+        
+        if(in_array($rel, $find)){
+            $pagination[$rel] = $item->getAttribute('href');
+        }
+    }
+    
+    // loop through the entries of communities
+    $communities = $dom->getElementsByTagName('entry');
+    
+    for ($i = 0; $i < $communities->length; $i ++) {
+        
+        $community = $communities->item($i);
+        $title = $community->getElementsByTagName("title")->item(0)->textContent;
+        
+        $communityUuid = $community->getElementsByTagName("communityUuid")->item(0)->textContent;
+        
+        $links = $community->getElementsByTagName("link");
+        
+        $commLinks = array();
+        
+        /* Clone the original array so we can pop the matched one off to improve processing speed */
+        $linkRelArrCopy = array_merge(array(), $linkRelArr);
+        
+        foreach ($links as $link) {
+            
+            $rel = $link->getAttribute('rel');
+            
+            // get the html link for opening the community directly.
+            if($rel == 'alternate'){
+                $commLinks[$rel] = $link->getAttribute('href');
+            }
+            // otherwise parse the links to get the different app / atom links
+            else{
+                $replace = str_replace($relBase, '', $rel);
+                
+                if ($key = array_search($replace, $linkRelArrCopy) !== false) {
+                    $commLinks[$replace] = $link->getAttribute('href');
+                    unset($linkRelArrCopy[$replace]);
+                }
+            }
+        }
+        
+        
+        $memberCount = $community
+        ->getElementsByTagName("membercount")
+        ->item(0)->textContent;
+        
+        $type = $community
+        ->getElementsByTagName("communityType")
+        ->item(0)->textContent;
+        
+        $listWhenRestricted = $community
+        ->getElementsByTagName("listWhenRestricted")
+        ->item(0)->textContent;
+        
+        $orgId = $community
+        ->getElementsByTagName("orgId")
+        ->item(0)->textContent;
+        
+        $published = $community->getElementsByTagName("published")
+        ->item(0)->textContent;
+        
+        $updated = $community->getElementsByTagName("updated")
+        ->item(0)->textContent;
+        
+        $summary = $community
+        ->getElementsByTagName("summary")
+        ->item(0)->textContent;
+        
+        $authorXml = $community->getElementsByTagName("author");
+        $author['name'] = $authorXml->item(0)
+        ->getElementsByTagName("name")
+        ->item(0)->textContent;
+        $author['userid'] = $authorXml->item(0)
+        ->getElementsByTagName("userid")
+        ->item(0)->textContent;
+        $author['userState'] = $authorXml->item(0)
+        ->getElementsByTagName("userState")
+        ->item(0)->textContent;
+        $author['orgId'] = $authorXml->item(0)
+        ->getElementsByTagName("orgId")
+        ->item(0)->textContent;
+        $author['isExternal'] = $authorXml->item(0)
+        ->getElementsByTagName("isExternal")
+        ->item(0)->textContent;
+        
+        $contributorXml = $community->getElementsByTagName("contributor");
+        $contributor['name'] = $contributorXml->item(0)
+        ->getElementsByTagName("name")
+        ->item(0)->textContent;
+        $contributor['userid'] = $contributorXml->item(0)
+        ->getElementsByTagName("userid")
+        ->item(0)->textContent;
+        $contributor['userState'] = $contributorXml->item(0)
+        ->getElementsByTagName("userState")
+        ->item(0)->textContent;
+        $contributor['orgId'] = $contributorXml->item(0)
+        ->getElementsByTagName("orgId")
+        ->item(0)->textContent;
+        $contributor['isExternal'] = $contributorXml->item(0)
+        ->getElementsByTagName("isExternal")
+        ->item(0)->textContent;
+        
+        $memberEmailPrivileges = $community
+        ->getElementsByTagName("memberEmailPrivileges")
+        ->item(0)->textContent;
+        
+        $isExternal = $community->getElementsByTagName("isExternal")
+        ->item(0)->textContent;
+        
+        
+        $parsedCommunity = array();
+        
+        $parsedCommunity['title'] = $title;
+        $parsedCommunity['communityUuid'] = $communityUuid;
+        $parsedCommunity['links'] = $commLinks;
+        $parsedCommunity['memberCount'] = $memberCount;
+        $parsedCommunity['type'] = $type;
+        $parsedCommunity['listWhenRestricted'] = $listWhenRestricted;
+        $parsedCommunity['orgId'] = $orgId;
+        $parsedCommunity['published'] = formatDate($published);
+        $parsedCommunity['updated'] = formatDate($updated);
+        $parsedCommunity['summary'] = $summary;
+        $parsedCommunity['author'] = $author;
+        $parsedCommunity['contributor'] = $contributor;
+        $parsedCommunity['memberEmailPrivileges'] = $memberEmailPrivileges;
+        $parsedCommunity['isExternal'] = $isExternal;
+        
+        array_push($parsedCommunities, $parsedCommunity);
+    }
+    
+    $communityData = array();
+    
+    $communityData['totalCommunityCount'] = $feed_total_results;
+    $communityData['startIndex'] = $feed_start_index;
+    $communityData['itemsPerPage'] = $feed_items_per_page;
+    $communityData['pagination'] = $pagination;
+    $communityData['List'] = $parsedCommunities;
+    
+    return $communityData;
+}
+
+function formatDate($value)
+{
+    $arr = date_parse($value);
+    $timestamp = strtotime($value);
+    $am = true;
+    $date = date('d/m/Y', $timestamp);
+    
+    if ($arr['hour'] >= 12) {
+        $am = false;
+    }
+    
+    if ($arr['minute'] < 9) {
+        $arr['minute'] = '0' . $arr['minute'];
+    }
+    
+    $am_pm = ($am) ? "am" : "pm";
+    
+    if ($date == date('d/m/Y')) {
+        $dateStr = 'Today at ' . $arr['hour'] . ":" . $arr['minute'] . $am_pm;
+    } else if ($date == date('d/m/Y', time() - (24 * 60 * 60))) {
+        $dateStr = 'Yesterday at ' . $arr['hour'] . ":" . $arr['minute'] . $am_pm;
+    } else {
+        
+        $currentYear = date('Y');
+        $year = date('Y', $timestamp);
+        $month = date('M', $timestamp);
+        
+        if ($currentYear != $year) {
+            $dateStr = $month . " " . $arr['day'] . ", " . $year;
+        } else {
+            $dateStr = $month . " " . $arr['day'] . ", " . $year;
+        }
+    }
+    return $dateStr;
+}
+
+
+function getPageNumFromCommUrl($url)
+{
+    $arr = parse_url($url);
+    parse_str($arr['query'], $get_params);
+    
+    return $get_params['page'];
+}
+
+
+
+function getCommunityMembers($siteConfigs, $commUuid, $includeInvitees = true){
+    
+    if (! (isset($_SESSION['environment'], $_SESSION['user']) ) ) {
+        return false;
+    }
+    
+    $url = $_SESSION['environment'] . $siteConfigs['memberslistSlug'] . "?communityUuid=" . $commUuid;
+    
+    $response = \Httpful\Request::get($url)->addHeader('Authorization', $_SESSION['access_token_header'])->send();
+    
+    $ret['members'] = parseMemberData($response);
+    
+    if($includeInvitees){
+        $url = $_SESSION['environment'] . $siteConfigs['inviteeslistSlug'] . "?communityUuid=" . $commUuid;
+        
+        $response = \Httpful\Request::get($url)->addHeader('Authorization', $_SESSION['access_token_header'])->send();
+        
+        $ret['invitees'] = parseMemberData($response);
+    }
+    return $ret;
+    
+}
+
+function parseMemberData($xml){
+    
+    // should be stored in main.ini ?
+    $relBase = 'http://www.ibm.com/xmlns/prod/sn/';
+    
+    $parsedMembers = array();
+    
+    $dom = new DOMDocument();
+    $dom->preserveWhiteSpace = true;
+    $dom->loadXML($xml);
+    
+    $entries = $dom->getElementsByTagNameNS('http://www.w3.org/2005/Atom', 'entry');
+    
+    for ($i = 0; $i < $entries->length; $i++) {
+        $member = array();
+        
+        $entry = $entries->item($i)->getElementsByTagName("contributor")->item(0);
+        $member['name'] = $entry->getElementsByTagName("name")->item(0)->textContent;
+        
+        $member['email'] = $entry->getElementsByTagName("email")->item(0)->textContent;
+        $member['userid'] = $entry->getElementsByTagName("userid")->item(0)->textContent;
+        $member['userState'] = $entry->getElementsByTagName("userState")->item(0)->textContent;
+        $member['isExternal'] = $entry->getElementsByTagName("isExternal")->item(0)->textContent;
+        
+        $role = $entries->item($i)->getElementsByTagName("role")->item(0)->textContent;
+        $member['role'] = $role;
+        
+        $cats = $entries->item($i)->getElementsByTagName("category");
+        
+        for($j = 0; $j < $cats->length; $j++){
+            $term = $cats[$j]->getAttribute('term');
+            
+            if($term == "business-owner"){
+                $member["business_owner"] = true;
+            }
+        }
+        array_push($parsedMembers, $member);
+    }
+    return $parsedMembers;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ?>
