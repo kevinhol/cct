@@ -239,7 +239,10 @@ $app->get('/Community/Members/:Uuid', function ($Uuid) use ($siteConfigs) {
         logout($siteConfigs, "You are not logged in yet", $siteConfigs['boostrapAlertTypes'][2]);
     }
     
-    if (! empty($Uuid) && filter_var($Uuid, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH | FILTER_FLAG_STRIP_LOW) !== false && preg_match($siteConfigs['commUuidRegex'], $Uuid)) {
+    if (! empty($Uuid) 
+        && filter_var($Uuid, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH | FILTER_FLAG_STRIP_LOW) !== false 
+        && preg_match($siteConfigs['commUuidRegex'], $Uuid)
+    ) {
         
         $data = getCommunityMembers($siteConfigs, $Uuid);
         

@@ -2,12 +2,6 @@
 
 use Httpful\Request;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 //// create a new cURL resource
 //function curl($url,$posts=""){
 //$ch = curl_init();
@@ -20,15 +14,12 @@ use Httpful\Request;
 //return $icerik;
 //curl_close($ch);
 //} 
-///*Bu fonksiyonu kullanarak kolayca curl yi kullanabilirsiniz.
-//Kullanımı*/
-//echo curl("http://gencbilgin.net/");
 
 require "vendor/autoload.php";
 
 $uri = "https://apps.collabservsvt1.swg.usma.ibm.com/api/bss/resource/subscriber";
 $response = \Httpful\Request::get($uri)
-        ->authenticateWith('kevinhol@ivthouse.com', 'pass0909')
+        ->authenticateWith('XXXXXXXX', 'XXXXXXXXXX')
         ->send();
 
 $myfile = fopen("newfile.txt", "w");
